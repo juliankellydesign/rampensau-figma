@@ -1,3 +1,6 @@
+import { ryb2rgb } from 'rybitten';
+import { cubes } from 'rybitten/cubes';
+
 figma.showUI(__html__, { width: 400, height: 600 });
 
 // Listen for selection changes
@@ -13,7 +16,7 @@ figma.on('selectionchange', () => {
     if (match) {
       // Parse the compact encoded values
       const values = match[1].split('|');
-      if (values.length === 15) {
+      if (values.length === 15 || values.length === 16) {
         const config: ColorPaletteConfig = {
           total: parseInt(values[0]),
           hStart: parseFloat(values[1]),
@@ -29,7 +32,8 @@ figma.on('selectionchange', () => {
           easingL: values[11],
           easingCurve: values[12],
           transformFn: values[13],
-          colorMode: values[14]
+          colorMode: values[14],
+          rybGamut: values[15] || 'default'
         };
         
         // Send configuration to UI
@@ -58,6 +62,7 @@ interface ColorPaletteConfig {
   easingCurve: string;
   transformFn: string;
   colorMode: string;
+  rybGamut?: string;
 }
 
 figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) => {
@@ -81,7 +86,8 @@ figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) 
       msg.config.easingL,
       msg.config.easingCurve,
       msg.config.transformFn,
-      msg.config.colorMode
+      msg.config.colorMode,
+      msg.config.rybGamut || 'default'
     ].join('|');
     frame.name = `Color Palette [rampensau|${configString}]`;
     frame.layoutMode = 'HORIZONTAL';
@@ -215,67 +221,18 @@ function hslToRyb(h: number, s: number, l: number): { r: number, y: number, b: n
   return { r: ry, y: y, b: by };
 }
 
-function rybToRgb(r: number, y: number, b: number): { r: number, g: number, b: number } {
-  // RYB to RGB using trilinear interpolation
-  // Corner values for RYB to RGB mapping
-  const corners = [
-    [1, 1, 1],     // white
-    [1, 0, 0],     // red
-    [1, 1, 0],     // yellow
-    [1, 0.5, 0],   // orange
-    [0, 0, 1],     // blue
-    [0.5, 0, 0.5], // purple
-    [0, 1, 0],     // green
-    [0, 0, 0]      // black
-  ];
+function rybToRgb(r: number, y: number, b: number, gamut: string = 'itten'): { r: number, g: number, b: number } {
+  // Get the cube for the specified gamut
+  const cubeData = cubes.get(gamut);
+  const cube = cubeData ? cubeData.cube : undefined;
   
-  // Trilinear interpolation
-  const c00 = [
-    corners[0][0] * (1 - r) + corners[1][0] * r,
-    corners[0][1] * (1 - r) + corners[1][1] * r,
-    corners[0][2] * (1 - r) + corners[1][2] * r
-  ];
-  
-  const c01 = [
-    corners[2][0] * (1 - r) + corners[3][0] * r,
-    corners[2][1] * (1 - r) + corners[3][1] * r,
-    corners[2][2] * (1 - r) + corners[3][2] * r
-  ];
-  
-  const c10 = [
-    corners[4][0] * (1 - r) + corners[5][0] * r,
-    corners[4][1] * (1 - r) + corners[5][1] * r,
-    corners[4][2] * (1 - r) + corners[5][2] * r
-  ];
-  
-  const c11 = [
-    corners[6][0] * (1 - r) + corners[7][0] * r,
-    corners[6][1] * (1 - r) + corners[7][1] * r,
-    corners[6][2] * (1 - r) + corners[7][2] * r
-  ];
-  
-  const c0 = [
-    c00[0] * (1 - y) + c01[0] * y,
-    c00[1] * (1 - y) + c01[1] * y,
-    c00[2] * (1 - y) + c01[2] * y
-  ];
-  
-  const c1 = [
-    c10[0] * (1 - y) + c11[0] * y,
-    c10[1] * (1 - y) + c11[1] * y,
-    c10[2] * (1 - y) + c11[2] * y
-  ];
-  
-  const c = [
-    c0[0] * (1 - b) + c1[0] * b,
-    c0[1] * (1 - b) + c1[1] * b,
-    c0[2] * (1 - b) + c1[2] * b
-  ];
+  // Use the RYBitten library with the specified cube
+  const rgb = ryb2rgb([r, y, b], { cube });
   
   return {
-    r: Math.round(Math.max(0, Math.min(255, c[0] * 255))),
-    g: Math.round(Math.max(0, Math.min(255, c[1] * 255))),
-    b: Math.round(Math.max(0, Math.min(255, c[2] * 255)))
+    r: Math.round(Math.max(0, Math.min(255, rgb[0] * 255))),
+    g: Math.round(Math.max(0, Math.min(255, rgb[1] * 255))),
+    b: Math.round(Math.max(0, Math.min(255, rgb[2] * 255)))
   };
 }
 
@@ -317,7 +274,7 @@ function generateColorPalette(config: ColorPaletteConfig): { r: number, g: numbe
     } else if (config.colorMode === 'rybitten') {
       // Convert HSL to RYB space
       const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
-      rgb = rybToRgb(ryb.r, ryb.y, ryb.b);
+      rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || 'default');
     } else {
       rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
     }
