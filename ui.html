@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-size: 12px;
+      margin: 0;
+      padding: 16px;
+      background: #ffffff;
+    }
+    
+    h2 {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+    }
+    
+    .control-group {
+      margin-bottom: 12px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 500;
+      color: #333;
+    }
+    
+    input[type="number"],
+    input[type="range"],
+    select {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    input[type="number"] {
+      padding: 4px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    
+    input[type="range"] {
+      margin: 4px 0;
+    }
+    
+    select {
+      padding: 4px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: white;
+    }
+    
+    .range-value {
+      width: 50px;
+      padding: 2px 4px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      text-align: right;
+      color: #333;
+      font-size: 11px;
+    }
+    
+    .range-value:focus {
+      outline: none;
+      border-color: #18a0fb;
+    }
+    
+    .range-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    
+    button {
+      flex: 1;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    
+    #generate {
+      background: #18a0fb;
+      color: white;
+    }
+    
+    #generate:hover {
+      background: #0090e7;
+    }
+    
+    #cancel {
+      background: #f0f0f0;
+      color: #333;
+    }
+    
+    #cancel:hover {
+      background: #e0e0e0;
+    }
+    
+    .preview {
+      display: flex;
+      height: 60px;
+      margin: 16px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .preview-color {
+      flex: 1;
+    }
+    
+    .section {
+      border-top: 1px solid #eee;
+      margin-top: 16px;
+      padding-top: 16px;
+    }
+    
+    .easing-controls {
+      display: none;
+    }
+    
+    .easing-controls.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h2>RampenSau Color Palette Generator</h2>
+  
+  <div class="preview" id="preview"></div>
+  
+  <div class="control-group">
+    <label>Total Colors</label>
+    <div class="range-container">
+      <input type="range" id="total" min="2" max="20" value="7">
+      <input type="number" class="range-value" id="totalValue" value="7" min="2" max="20">
+    </div>
+  </div>
+  
+  <div class="control-group">
+    <label>Hue Start (°)</label>
+    <div class="range-container">
+      <input type="range" id="hStart" min="0" max="360" value="0">
+      <input type="number" class="range-value" id="hStartValue" value="0" min="0" max="360">
+    </div>
+  </div>
+  
+  <div class="control-group">
+    <label>Hue Cycles</label>
+    <div class="range-container">
+      <input type="range" id="hCycles" min="-2" max="2" step="0.1" value="0.3">
+      <input type="number" class="range-value" id="hCyclesValue" value="0.3" min="-2" max="2" step="0.1">
+    </div>
+  </div>
+  
+  <div class="control-group">
+    <label>Hue Start Center</label>
+    <div class="range-container">
+      <input type="range" id="hStartCenter" min="0" max="1" step="0.01" value="0.1">
+      <input type="number" class="range-value" id="hStartCenterValue" value="0.1" min="0" max="1" step="0.01">
+    </div>
+  </div>
+  
+  <div class="section">
+    <div class="control-group">
+      <label>Min Lightness (%)</label>
+      <div class="range-container">
+        <input type="range" id="minLight" min="0" max="100" value="67">
+        <input type="number" class="range-value" id="minLightValue" value="67" min="0" max="100">
+      </div>
+    </div>
+    
+    <div class="control-group">
+      <label>Max Lightness (%)</label>
+      <div class="range-container">
+        <input type="range" id="maxLight" min="0" max="100" value="84">
+        <input type="number" class="range-value" id="maxLightValue" value="84" min="0" max="100">
+      </div>
+    </div>
+    
+    <div class="control-group">
+      <label>Min Saturation (%)</label>
+      <div class="range-container">
+        <input type="range" id="minSaturation" min="0" max="100" value="67">
+        <input type="number" class="range-value" id="minSaturationValue" value="67" min="0" max="100">
+      </div>
+    </div>
+    
+    <div class="control-group">
+      <label>Max Saturation (%)</label>
+      <div class="range-container">
+        <input type="range" id="maxSaturation" min="0" max="100" value="81">
+        <input type="number" class="range-value" id="maxSaturationValue" value="81" min="0" max="100">
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <div class="control-group">
+      <label>Easing Mode</label>
+      <select id="easingMode">
+        <option value="individualAxis">Individual Axis</option>
+        <option value="slCurve">S/L Curve</option>
+      </select>
+    </div>
+    
+    <div class="easing-controls active" id="individualAxisControls">
+      <div class="control-group">
+        <label>Hue Easing</label>
+        <select id="easingH">
+          <option value="linear">Linear</option>
+          <option value="easeInSine">Ease In Sine</option>
+          <option value="easeOutSine">Ease Out Sine</option>
+          <option value="easeInOutSine">Ease In Out Sine</option>
+          <option value="easeInQuad">Ease In Quad</option>
+          <option value="easeOutQuad">Ease Out Quad</option>
+          <option value="easeInOutQuad">Ease In Out Quad</option>
+          <option value="easeInCubic">Ease In Cubic</option>
+          <option value="easeOutCubic">Ease Out Cubic</option>
+          <option value="easeInOutCubic">Ease In Out Cubic</option>
+          <option value="easeInQuart">Ease In Quart</option>
+          <option value="easeOutQuart">Ease Out Quart</option>
+          <option value="easeInOutQuart">Ease In Out Quart</option>
+          <option value="easeInQuint">Ease In Quint</option>
+          <option value="easeOutQuint">Ease Out Quint</option>
+          <option value="easeInOutQuint">Ease In Out Quint</option>
+          <option value="easeInExpo">Ease In Expo</option>
+          <option value="easeOutExpo">Ease Out Expo</option>
+          <option value="easeInOutExpo">Ease In Out Expo</option>
+          <option value="easeInCirc">Ease In Circ</option>
+          <option value="easeOutCirc">Ease Out Circ</option>
+          <option value="easeInOutCirc">Ease In Out Circ</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label>Saturation Easing</label>
+        <select id="easingS">
+          <option value="linear">Linear</option>
+          <option value="easeInSine">Ease In Sine</option>
+          <option value="easeOutSine">Ease Out Sine</option>
+          <option value="easeInOutSine">Ease In Out Sine</option>
+          <option value="easeInQuad">Ease In Quad</option>
+          <option value="easeOutQuad">Ease Out Quad</option>
+          <option value="easeInOutQuad">Ease In Out Quad</option>
+          <option value="easeInCubic">Ease In Cubic</option>
+          <option value="easeOutCubic">Ease Out Cubic</option>
+          <option value="easeInOutCubic">Ease In Out Cubic</option>
+          <option value="easeInQuart">Ease In Quart</option>
+          <option value="easeOutQuart">Ease Out Quart</option>
+          <option value="easeInOutQuart">Ease In Out Quart</option>
+          <option value="easeInQuint">Ease In Quint</option>
+          <option value="easeOutQuint">Ease Out Quint</option>
+          <option value="easeInOutQuint">Ease In Out Quint</option>
+          <option value="easeInExpo">Ease In Expo</option>
+          <option value="easeOutExpo">Ease Out Expo</option>
+          <option value="easeInOutExpo">Ease In Out Expo</option>
+          <option value="easeInCirc">Ease In Circ</option>
+          <option value="easeOutCirc">Ease Out Circ</option>
+          <option value="easeInOutCirc">Ease In Out Circ</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label>Lightness Easing</label>
+        <select id="easingL">
+          <option value="linear">Linear</option>
+          <option value="easeInSine">Ease In Sine</option>
+          <option value="easeOutSine">Ease Out Sine</option>
+          <option value="easeInOutSine">Ease In Out Sine</option>
+          <option value="easeInQuad">Ease In Quad</option>
+          <option value="easeOutQuad">Ease Out Quad</option>
+          <option value="easeInOutQuad">Ease In Out Quad</option>
+          <option value="easeInCubic">Ease In Cubic</option>
+          <option value="easeOutCubic">Ease Out Cubic</option>
+          <option value="easeInOutCubic">Ease In Out Cubic</option>
+          <option value="easeInQuart">Ease In Quart</option>
+          <option value="easeOutQuart">Ease Out Quart</option>
+          <option value="easeInOutQuart">Ease In Out Quart</option>
+          <option value="easeInQuint">Ease In Quint</option>
+          <option value="easeOutQuint">Ease Out Quint</option>
+          <option value="easeInOutQuint">Ease In Out Quint</option>
+          <option value="easeInExpo">Ease In Expo</option>
+          <option value="easeOutExpo">Ease Out Expo</option>
+          <option value="easeInOutExpo">Ease In Out Expo</option>
+          <option value="easeInCirc">Ease In Circ</option>
+          <option value="easeOutCirc">Ease Out Circ</option>
+          <option value="easeInOutCirc">Ease In Out Circ</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="easing-controls" id="slCurveControls">
+      <div class="control-group">
+        <label>Curve Easing</label>
+        <select id="easingCurve">
+          <option value="linear">Linear</option>
+          <option value="easeInSine">Ease In Sine</option>
+          <option value="easeOutSine">Ease Out Sine</option>
+          <option value="easeInOutSine">Ease In Out Sine</option>
+          <option value="easeInQuad">Ease In Quad</option>
+          <option value="easeOutQuad">Ease Out Quad</option>
+          <option value="easeInOutQuad">Ease In Out Quad</option>
+          <option value="easeInCubic">Ease In Cubic</option>
+          <option value="easeOutCubic">Ease Out Cubic</option>
+          <option value="easeInOutCubic">Ease In Out Cubic</option>
+          <option value="easeInQuart">Ease In Quart</option>
+          <option value="easeOutQuart">Ease Out Quart</option>
+          <option value="easeInOutQuart">Ease In Out Quart</option>
+          <option value="easeInQuint">Ease In Quint</option>
+          <option value="easeOutQuint">Ease Out Quint</option>
+          <option value="easeInOutQuint">Ease In Out Quint</option>
+          <option value="easeInExpo">Ease In Expo</option>
+          <option value="easeOutExpo">Ease Out Expo</option>
+          <option value="easeInOutExpo">Ease In Out Expo</option>
+          <option value="easeInCirc">Ease In Circ</option>
+          <option value="easeOutCirc">Ease Out Circ</option>
+          <option value="easeInOutCirc">Ease In Out Circ</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <div class="control-group">
+      <label>Transform Function</label>
+      <select id="transformFn">
+        <option value="none">None</option>
+        <option value="harveyHue">Harvey Hue</option>
+        <option value="muted">Muted</option>
+        <option value="pastel">Pastel</option>
+      </select>
+    </div>
+    
+    <div class="control-group">
+      <label>Color Mode</label>
+      <select id="colorMode">
+        <option value="hsl">HSL</option>
+        <option value="oklch">OKLCH</option>
+        <option value="rybitten">RYBitten</option>
+        <option value="hsv">HSV (coming soon)</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="button-group">
+    <button id="generate">Generate Palette</button>
+    <button id="cancel">Cancel</button>
+  </div>
+  
+  <script>
+    // Update range value displays and handle input changes
+    document.querySelectorAll('input[type="range"]').forEach(input => {
+      const valueInput = document.getElementById(input.id + 'Value');
+      
+      // Update input when slider changes
+      input.addEventListener('input', () => {
+        valueInput.value = input.value;
+        updatePreview();
+      });
+      
+      // Update slider when input changes
+      valueInput.addEventListener('input', () => {
+        const val = parseFloat(valueInput.value);
+        if (!isNaN(val)) {
+          input.value = val.toString();
+          updatePreview();
+        }
+      });
+    });
+    
+    // Handle easing mode change
+    document.getElementById('easingMode').addEventListener('change', (e) => {
+      const individualControls = document.getElementById('individualAxisControls');
+      const curveControls = document.getElementById('slCurveControls');
+      
+      if (e.target.value === 'individualAxis') {
+        individualControls.classList.add('active');
+        curveControls.classList.remove('active');
+      } else {
+        individualControls.classList.remove('active');
+        curveControls.classList.add('active');
+      }
+      updatePreview();
+    });
+    
+    // Update preview on any change
+    document.querySelectorAll('select').forEach(select => {
+      select.addEventListener('change', updatePreview);
+    });
+    
+    function getConfig() {
+      return {
+        total: parseInt(document.getElementById('total').value),
+        hStart: parseFloat(document.getElementById('hStart').value),
+        hCycles: parseFloat(document.getElementById('hCycles').value),
+        hStartCenter: parseFloat(document.getElementById('hStartCenter').value),
+        minLight: parseFloat(document.getElementById('minLight').value),
+        maxLight: parseFloat(document.getElementById('maxLight').value),
+        minSaturation: parseFloat(document.getElementById('minSaturation').value),
+        maxSaturation: parseFloat(document.getElementById('maxSaturation').value),
+        easingMode: document.getElementById('easingMode').value,
+        easingH: document.getElementById('easingH').value,
+        easingS: document.getElementById('easingS').value,
+        easingL: document.getElementById('easingL').value,
+        easingCurve: document.getElementById('easingCurve').value,
+        transformFn: document.getElementById('transformFn').value,
+        colorMode: document.getElementById('colorMode').value
+      };
+    }
+    
+    function updatePreview() {
+      const config = getConfig();
+      const preview = document.getElementById('preview');
+      preview.innerHTML = '';
+      
+      const colors = generateColorPalette(config);
+      colors.forEach(color => {
+        const div = document.createElement('div');
+        div.className = 'preview-color';
+        div.style.backgroundColor = `rgb(${color.r}, ${color.g}, ${color.b})`;
+        preview.appendChild(div);
+      });
+    }
+    
+    // OKLCH conversion functions
+    function oklchToRgb(l, c, h) {
+      // Clamp inputs to valid ranges
+      l = Math.max(0, Math.min(1, l));
+      c = Math.max(0, c);
+      h = h % 360;
+      if (h < 0) h += 360;
+      
+      // Convert OKLCH to OKLab
+      const hRad = h * Math.PI / 180;
+      const a = c * Math.cos(hRad);
+      const b = c * Math.sin(hRad);
+      
+      // OKLab to linear RGB
+      const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
+      const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
+      const s_ = l - 0.0894841775 * a - 1.2914855480 * b;
+      
+      const l3 = l_ * l_ * l_;
+      const m3 = m_ * m_ * m_;
+      const s3 = s_ * s_ * s_;
+      
+      const r = 4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3;
+      const g = -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3;
+      const b_ = -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3;
+      
+      // Apply gamma correction and clamp
+      const gammaCorrect = (channel) => {
+        channel = Math.max(0, channel); // Clamp negative values
+        if (channel <= 0.0031308) {
+          return 12.92 * channel;
+        }
+        return 1.055 * Math.pow(channel, 1 / 2.4) - 0.055;
+      };
+      
+      return {
+        r: Math.round(Math.max(0, Math.min(255, gammaCorrect(r) * 255))),
+        g: Math.round(Math.max(0, Math.min(255, gammaCorrect(g) * 255))),
+        b: Math.round(Math.max(0, Math.min(255, gammaCorrect(b_) * 255)))
+      };
+    }
+    
+    // RYBitten conversion functions
+    function hslToRyb(h, s, l) {
+      // First convert HSL to RGB
+      const rgb = hslToRgb(h, s, l);
+      
+      // Then RGB to RYB using simplified conversion
+      const r = rgb.r / 255;
+      const g = rgb.g / 255;
+      const b = rgb.b / 255;
+      
+      // Remove white
+      const w = Math.min(r, g, b);
+      const r1 = r - w;
+      const g1 = g - w;
+      const b1 = b - w;
+      
+      const mg = Math.max(r1, g1, b1);
+      
+      // Get yellow
+      let y = Math.min(r1, g1);
+      let ry = r1 - y;
+      let gy = g1 - y;
+      
+      // Get blue
+      let by = b1;
+      
+      // Normalize
+      if (by > 0 && gy > 0) {
+        by /= 2;
+        gy /= 2;
+      }
+      
+      // Redistribute
+      ry += gy;
+      by += gy;
+      
+      // Normalize to max
+      const max = Math.max(ry, y, by);
+      if (max > 0) {
+        const n = mg / max;
+        ry *= n;
+        y *= n;
+        by *= n;
+      }
+      
+      // Add white back
+      ry += w;
+      y += w;
+      by += w;
+      
+      return { r: ry, y: y, b: by };
+    }
+    
+    function rybToRgb(r, y, b) {
+      // RYB to RGB using trilinear interpolation
+      // Corner values for RYB to RGB mapping
+      const corners = [
+        [1, 1, 1],     // white
+        [1, 0, 0],     // red
+        [1, 1, 0],     // yellow
+        [1, 0.5, 0],   // orange
+        [0, 0, 1],     // blue
+        [0.5, 0, 0.5], // purple
+        [0, 1, 0],     // green
+        [0, 0, 0]      // black
+      ];
+      
+      // Trilinear interpolation
+      const c00 = [
+        corners[0][0] * (1 - r) + corners[1][0] * r,
+        corners[0][1] * (1 - r) + corners[1][1] * r,
+        corners[0][2] * (1 - r) + corners[1][2] * r
+      ];
+      
+      const c01 = [
+        corners[2][0] * (1 - r) + corners[3][0] * r,
+        corners[2][1] * (1 - r) + corners[3][1] * r,
+        corners[2][2] * (1 - r) + corners[3][2] * r
+      ];
+      
+      const c10 = [
+        corners[4][0] * (1 - r) + corners[5][0] * r,
+        corners[4][1] * (1 - r) + corners[5][1] * r,
+        corners[4][2] * (1 - r) + corners[5][2] * r
+      ];
+      
+      const c11 = [
+        corners[6][0] * (1 - r) + corners[7][0] * r,
+        corners[6][1] * (1 - r) + corners[7][1] * r,
+        corners[6][2] * (1 - r) + corners[7][2] * r
+      ];
+      
+      const c0 = [
+        c00[0] * (1 - y) + c01[0] * y,
+        c00[1] * (1 - y) + c01[1] * y,
+        c00[2] * (1 - y) + c01[2] * y
+      ];
+      
+      const c1 = [
+        c10[0] * (1 - y) + c11[0] * y,
+        c10[1] * (1 - y) + c11[1] * y,
+        c10[2] * (1 - y) + c11[2] * y
+      ];
+      
+      const c = [
+        c0[0] * (1 - b) + c1[0] * b,
+        c0[1] * (1 - b) + c1[1] * b,
+        c0[2] * (1 - b) + c1[2] * b
+      ];
+      
+      return {
+        r: Math.round(Math.max(0, Math.min(255, c[0] * 255))),
+        g: Math.round(Math.max(0, Math.min(255, c[1] * 255))),
+        b: Math.round(Math.max(0, Math.min(255, c[2] * 255)))
+      };
+    }
+    
+    function generateColorPalette(config) {
+      const colors = [];
+      
+      for (let i = 0; i < config.total; i++) {
+        const t = i / (config.total - 1);
+        
+        let hue, saturation, lightness;
+        
+        if (config.easingMode === 'individualAxis') {
+          const easedT_h = applyEasing(t, config.easingH);
+          const easedT_s = applyEasing(t, config.easingS);
+          const easedT_l = applyEasing(t, config.easingL);
+          
+          const hueRange = config.hCycles * 360;
+          const hueOffset = config.hStart + (easedT_h - config.hStartCenter) * hueRange;
+          hue = (hueOffset + 360) % 360;
+          
+          saturation = config.minSaturation + easedT_s * (config.maxSaturation - config.minSaturation);
+          lightness = config.minLight + easedT_l * (config.maxLight - config.minLight);
+        } else {
+          const easedT = applyEasing(t, config.easingCurve);
+          
+          const hueRange = config.hCycles * 360;
+          const hueOffset = config.hStart + (easedT - config.hStartCenter) * hueRange;
+          hue = (hueOffset + 360) % 360;
+          
+          saturation = config.minSaturation + easedT * (config.maxSaturation - config.minSaturation);
+          lightness = config.minLight + easedT * (config.maxLight - config.minLight);
+        }
+        
+        let rgb;
+        if (config.colorMode === 'oklch') {
+          // For OKLCH: L should be 0-1, C should be 0-0.4, H should be 0-360
+          rgb = oklchToRgb(lightness / 100, saturation / 100 * 0.4, hue);
+        } else if (config.colorMode === 'rybitten') {
+          // Convert HSL to RYB space
+          const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
+          rgb = rybToRgb(ryb.r, ryb.y, ryb.b);
+        } else {
+          rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
+        }
+        
+        const transformedRgb = applyTransform(rgb, config.transformFn, hue);
+        colors.push(transformedRgb);
+      }
+      
+      return colors;
+    }
+    
+    function applyEasing(t, easingType) {
+      switch (easingType) {
+        case 'linear': return t;
+        case 'easeInSine': return 1 - Math.cos((t * Math.PI) / 2);
+        case 'easeOutSine': return Math.sin((t * Math.PI) / 2);
+        case 'easeInOutSine': return -(Math.cos(Math.PI * t) - 1) / 2;
+        case 'easeInQuad': return t * t;
+        case 'easeOutQuad': return 1 - (1 - t) * (1 - t);
+        case 'easeInOutQuad': return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        case 'easeInCubic': return t * t * t;
+        case 'easeOutCubic': return 1 - Math.pow(1 - t, 3);
+        case 'easeInOutCubic': return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        case 'easeInQuart': return t * t * t * t;
+        case 'easeOutQuart': return 1 - Math.pow(1 - t, 4);
+        case 'easeInOutQuart': return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+        case 'easeInQuint': return t * t * t * t * t;
+        case 'easeOutQuint': return 1 - Math.pow(1 - t, 5);
+        case 'easeInOutQuint': return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
+        case 'easeInExpo': return t === 0 ? 0 : Math.pow(2, 10 * t - 10);
+        case 'easeOutExpo': return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+        case 'easeInOutExpo': return t === 0 ? 0 : t === 1 ? 1 : t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2;
+        case 'easeInCirc': return 1 - Math.sqrt(1 - Math.pow(t, 2));
+        case 'easeOutCirc': return Math.sqrt(1 - Math.pow(t - 1, 2));
+        case 'easeInOutCirc': return t < 0.5 ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) / 2 : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2;
+        default: return t;
+      }
+    }
+    
+    function hslToRgb(h, s, l) {
+      let r, g, b;
+      
+      if (s === 0) {
+        r = g = b = l;
+      } else {
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+      
+      return {
+        r: Math.round(r * 255),
+        g: Math.round(g * 255),
+        b: Math.round(b * 255)
+      };
+    }
+    
+    function harveyHue(h) {
+      // Harvey Hue transformation to create more evenly distributed spectrum
+      // Based on Harvey Rayner's work, adapted for RampenSau
+      const hNorm = h % 1;
+      let hTransformed;
+      
+      if (hNorm < 0.0833) {
+        hTransformed = hNorm * 0.5 / 0.0833;
+      } else if (hNorm < 0.1667) {
+        hTransformed = 0.5 + (hNorm - 0.0833) * 0.5 / 0.0833;
+      } else if (hNorm < 0.5) {
+        hTransformed = 1 + (hNorm - 0.1667) * 2 / 0.3333;
+      } else if (hNorm < 0.8333) {
+        hTransformed = 3 + (hNorm - 0.5) * 2 / 0.3333;
+      } else {
+        hTransformed = 5 + (hNorm - 0.8333) * 1 / 0.1667;
+      }
+      
+      return (hTransformed / 6) % 1;
+    }
+    
+    function applyTransform(rgb, transformFn, originalHue) {
+      switch (transformFn) {
+        case 'harveyHue':
+          // Convert back to HSL, apply Harvey Hue, then back to RGB
+          const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+          const transformedHue = harveyHue(originalHue / 360);
+          return hslToRgb(transformedHue, hsl.s, hsl.l);
+        case 'muted':
+          return {
+            r: Math.round(rgb.r * 0.8),
+            g: Math.round(rgb.g * 0.8),
+            b: Math.round(rgb.b * 0.8)
+          };
+        case 'pastel':
+          return {
+            r: Math.round(rgb.r * 0.7 + 255 * 0.3),
+            g: Math.round(rgb.g * 0.7 + 255 * 0.3),
+            b: Math.round(rgb.b * 0.7 + 255 * 0.3)
+          };
+        case 'none':
+        default:
+          return rgb;
+      }
+    }
+    
+    function rgbToHsl(r, g, b) {
+      r /= 255;
+      g /= 255;
+      b /= 255;
+      
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
+      
+      if (max === min) {
+        h = s = 0;
+      } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        
+        switch (max) {
+          case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+          case g: h = ((b - r) / d + 2) / 6; break;
+          case b: h = ((r - g) / d + 4) / 6; break;
+        }
+      }
+      
+      return { h, s, l };
+    }
+    
+    // Initial preview
+    updatePreview();
+    
+    // Button handlers
+    document.getElementById('generate').onclick = () => {
+      const config = getConfig();
+      parent.postMessage({ pluginMessage: { type: 'generate-palette', config } }, '*');
+    };
+    
+    document.getElementById('cancel').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*');
+    };
+    
+    // Listen for messages from the plugin
+    window.onmessage = (event) => {
+      if (event.data.pluginMessage) {
+        if (event.data.pluginMessage.type === 'palette-generated') {
+          // Could show a success message or update UI
+        } else if (event.data.pluginMessage.type === 'load-config') {
+          // Load configuration into UI
+          const config = event.data.pluginMessage.config;
+          
+          // Set values
+          document.getElementById('total').value = config.total;
+          document.getElementById('totalValue').value = config.total;
+          
+          document.getElementById('hStart').value = config.hStart;
+          document.getElementById('hStartValue').value = config.hStart;
+          
+          document.getElementById('hCycles').value = config.hCycles;
+          document.getElementById('hCyclesValue').value = config.hCycles;
+          
+          document.getElementById('hStartCenter').value = config.hStartCenter;
+          document.getElementById('hStartCenterValue').value = config.hStartCenter;
+          
+          document.getElementById('minLight').value = config.minLight;
+          document.getElementById('minLightValue').value = config.minLight;
+          
+          document.getElementById('maxLight').value = config.maxLight;
+          document.getElementById('maxLightValue').value = config.maxLight;
+          
+          document.getElementById('minSaturation').value = config.minSaturation;
+          document.getElementById('minSaturationValue').value = config.minSaturation;
+          
+          document.getElementById('maxSaturation').value = config.maxSaturation;
+          document.getElementById('maxSaturationValue').value = config.maxSaturation;
+          
+          // Set selects
+          document.getElementById('easingMode').value = config.easingMode;
+          document.getElementById('easingH').value = config.easingH;
+          document.getElementById('easingS').value = config.easingS;
+          document.getElementById('easingL').value = config.easingL;
+          document.getElementById('easingCurve').value = config.easingCurve;
+          document.getElementById('transformFn').value = config.transformFn;
+          document.getElementById('colorMode').value = config.colorMode;
+          
+          // Trigger easing mode change to show/hide correct controls
+          const event = new Event('change');
+          document.getElementById('easingMode').dispatchEvent(event);
+          
+          // Update preview
+          updatePreview();
+        }
+      }
+    };
+  </script>
+</body>
+</html>
