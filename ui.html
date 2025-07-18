@@ -825,8 +825,8 @@
           document.getElementById('colorMode').value = config.colorMode;
           
           // Trigger easing mode change to show/hide correct controls
-          const event = new Event('change');
-          document.getElementById('easingMode').dispatchEvent(event);
+          const changeEvent = new Event('change');
+          document.getElementById('easingMode').dispatchEvent(changeEvent);
           
           // Update preview
           updatePreview();
