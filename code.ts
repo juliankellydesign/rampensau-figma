@@ -9,19 +9,34 @@ figma.on('selectionchange', () => {
     const frame = selection[0];
     
     // Try to extract configuration from frame name
-    const match = frame.name.match(/\| ({.*})$/);
+    const match = frame.name.match(/\[rampensau\|(.+)\]$/);
     if (match) {
-      try {
-        const configData = JSON.parse(match[1]);
-        if (configData.type === 'rampensau-palette' && configData.config) {
-          // Send configuration to UI
-          figma.ui.postMessage({
-            type: 'load-config',
-            config: configData.config
-          });
-        }
-      } catch (e) {
-        // Invalid JSON, ignore
+      // Parse the compact encoded values
+      const values = match[1].split('|');
+      if (values.length === 15) {
+        const config: ColorPaletteConfig = {
+          total: parseInt(values[0]),
+          hStart: parseFloat(values[1]),
+          hCycles: parseFloat(values[2]),
+          hStartCenter: parseFloat(values[3]),
+          minLight: parseFloat(values[4]),
+          maxLight: parseFloat(values[5]),
+          minSaturation: parseFloat(values[6]),
+          maxSaturation: parseFloat(values[7]),
+          easingMode: values[8] as 'individualAxis' | 'slCurve',
+          easingH: values[9],
+          easingS: values[10],
+          easingL: values[11],
+          easingCurve: values[12],
+          transformFn: values[13],
+          colorMode: values[14]
+        };
+        
+        // Send configuration to UI
+        figma.ui.postMessage({
+          type: 'load-config',
+          config: config
+        });
       }
     }
   }
@@ -50,12 +65,25 @@ figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) 
     const colors = generateColorPalette(msg.config);
     
     const frame = figma.createFrame();
-    // Store the configuration in the frame name as JSON
-    const configData = {
-      type: 'rampensau-palette',
-      config: msg.config
-    };
-    frame.name = `Color Palette | ${JSON.stringify(configData)}`;
+    // Store the configuration in the frame name as a compact encoded string
+    const configString = [
+      msg.config.total,
+      msg.config.hStart,
+      msg.config.hCycles,
+      msg.config.hStartCenter,
+      msg.config.minLight,
+      msg.config.maxLight,
+      msg.config.minSaturation,
+      msg.config.maxSaturation,
+      msg.config.easingMode,
+      msg.config.easingH,
+      msg.config.easingS,
+      msg.config.easingL,
+      msg.config.easingCurve,
+      msg.config.transformFn,
+      msg.config.colorMode
+    ].join('|');
+    frame.name = `Color Palette [rampensau|${configString}]`;
     frame.layoutMode = 'HORIZONTAL';
     frame.primaryAxisSizingMode = 'AUTO';
     frame.counterAxisSizingMode = 'AUTO';
