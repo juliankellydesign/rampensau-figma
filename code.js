@@ -1135,7 +1135,6 @@ function hslToRgb(h2, s2, l3) {
     b: Math.round(b2 * 255)
   };
 }
-var { harveyHue: harveyHue2 } = utils_exports;
 function rgbToHsl(r2, g3, b2) {
   r2 /= 255;
   g3 /= 255;
@@ -1168,7 +1167,7 @@ function applyTransform(rgb, transformFn, originalHue) {
   switch (transformFn) {
     case "harveyHue": {
       const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
-      const transformedHue = harveyHue2((originalHue || 0) / 360);
+      const transformedHue = utils_exports.harveyHue((originalHue || 0) / 360);
       return hslToRgb(transformedHue, hsl.s, hsl.l);
     }
     case "muted":

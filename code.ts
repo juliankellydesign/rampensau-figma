@@ -345,7 +345,6 @@ function hslToRgb(h: number, s: number, l: number): { r: number, g: number, b: n
 }
 
 // Use harveyHue from rampensau utils
-const { harveyHue } = utils;
 
 function rgbToHsl(r: number, g: number, b: number): { h: number, s: number, l: number } {
   r /= 255;
@@ -379,7 +378,7 @@ function applyTransform(rgb: { r: number, g: number, b: number }, transformFn: s
     case 'harveyHue': {
       // Convert back to HSL, apply Harvey Hue, then back to RGB
       const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
-      const transformedHue = harveyHue((originalHue || 0) / 360);
+      const transformedHue = utils.harveyHue((originalHue || 0) / 360);
       return hslToRgb(transformedHue, hsl.s, hsl.l);
     }
     case 'muted':
