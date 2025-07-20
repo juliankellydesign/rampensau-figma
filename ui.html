@@ -407,6 +407,8 @@
   </div>
   
   <script>
+    console.log('[UI] Script starting...');
+    
     // Update range value displays and handle input changes
     document.querySelectorAll('input[type="range"]').forEach(input => {
       const valueInput = document.getElementById(input.id + 'Value');
@@ -811,10 +813,25 @@
     updatePreview();
     
     // Button handlers
-    document.getElementById('generate').onclick = () => {
-      const config = getConfig();
-      parent.postMessage({ pluginMessage: { type: 'generate-palette', config } }, '*');
-    };
+    const generateButton = document.getElementById('generate');
+    console.log('[UI] Generate button element:', generateButton);
+    
+    if (generateButton) {
+      generateButton.onclick = () => {
+        console.log('[UI] Generate button clicked');
+        try {
+          const config = getConfig();
+          console.log('[UI] Config:', config);
+          console.log('[UI] Sending message to plugin');
+          parent.postMessage({ pluginMessage: { type: 'generate-palette', config } }, '*');
+          console.log('[UI] Message sent successfully');
+        } catch (error) {
+          console.error('[UI] Error in generate button handler:', error);
+        }
+      };
+    } else {
+      console.error('[UI] Generate button not found!');
+    }
     
     document.getElementById('cancel').onclick = () => {
       parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*');
@@ -822,8 +839,10 @@
     
     // Listen for messages from the plugin
     window.onmessage = (event) => {
+      console.log('[UI] Received message:', event.data);
       if (event.data.pluginMessage) {
         if (event.data.pluginMessage.type === 'palette-generated') {
+          console.log('[UI] Palette generated successfully');
           // Could show a success message or update UI
         } else if (event.data.pluginMessage.type === 'load-config') {
           // Load configuration into UI

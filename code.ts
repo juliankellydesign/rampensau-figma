@@ -67,10 +67,17 @@ interface ColorPaletteConfig {
 }
 
 figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) => {
+  console.log('[Plugin] Received message:', msg);
+  
   if (msg.type === 'generate-palette' && msg.config) {
-    const colors = generateColorPalette(msg.config);
+    console.log('[Plugin] Processing generate-palette with config:', msg.config);
     
-    const frame = figma.createFrame();
+    try {
+      const colors = generateColorPalette(msg.config);
+      console.log('[Plugin] Generated colors:', colors);
+      
+      const frame = figma.createFrame();
+      console.log('[Plugin] Created frame');
     // Store the configuration in the frame name as a compact encoded string
     const configString = [
       msg.config.total,
@@ -115,11 +122,18 @@ figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) 
       frame.appendChild(rect);
     });
     
-    figma.currentPage.appendChild(frame);
-    figma.currentPage.selection = [frame];
-    figma.viewport.scrollAndZoomIntoView([frame]);
-    
-    figma.ui.postMessage({ type: 'palette-generated' });
+      figma.currentPage.appendChild(frame);
+      figma.currentPage.selection = [frame];
+      figma.viewport.scrollAndZoomIntoView([frame]);
+      
+      console.log('[Plugin] Frame added to page and selected');
+      figma.ui.postMessage({ type: 'palette-generated' });
+      console.log('[Plugin] Success message sent back to UI');
+    } catch (error) {
+      console.error('[Plugin] Error generating palette:', error);
+      // Send error message back to UI
+      figma.ui.postMessage({ type: 'error', message: error.toString() });
+    }
   }
   
   if (msg.type === 'cancel') {
@@ -238,10 +252,12 @@ function rybToRgb(r: number, y: number, b: number, gamut: string = 'itten'): { r
 }
 
 function generateColorPalette(config: ColorPaletteConfig): { r: number, g: number, b: number }[] {
+  console.log('[generateColorPalette] Starting with config:', config);
   const colors: { r: number, g: number, b: number }[] = [];
   
   for (let i = 0; i < config.total; i++) {
-    const t = i / (config.total - 1);
+    const t = config.total === 1 ? 0 : i / (config.total - 1);
+    console.log(`[generateColorPalette] Color ${i}: t=${t}`);
     
     let hue: number;
     let saturation: number;
@@ -269,19 +285,33 @@ function generateColorPalette(config: ColorPaletteConfig): { r: number, g: numbe
       lightness = config.minLight + easedT * (config.maxLight - config.minLight);
     }
     
-    let rgb: { r: number, g: number, b: number };
-    if (config.colorMode === 'oklch') {
-      rgb = oklchToRgb(lightness / 100, saturation / 100 * 0.4, hue);
-    } else if (config.colorMode === 'rybitten') {
-      // Convert HSL to RYB space
-      const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
-      rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || 'itten');
-    } else {
-      rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
-    }
+    console.log(`[generateColorPalette] HSL values: H=${hue}, S=${saturation}, L=${lightness}`);
     
-    const transformedRgb = applyTransform(rgb, config.transformFn, hue);
-    colors.push(transformedRgb);
+    let rgb: { r: number, g: number, b: number };
+    try {
+      if (config.colorMode === 'oklch') {
+        console.log('[generateColorPalette] Using OKLCH mode');
+        rgb = oklchToRgb(lightness / 100, saturation / 100 * 0.4, hue);
+      } else if (config.colorMode === 'rybitten') {
+        console.log('[generateColorPalette] Using RYBitten mode with gamut:', config.rybGamut || 'itten');
+        // Convert HSL to RYB space
+        const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
+        console.log('[generateColorPalette] RYB values:', ryb);
+        rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || 'itten');
+      } else {
+        console.log('[generateColorPalette] Using HSL mode');
+        rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
+      }
+      
+      console.log('[generateColorPalette] RGB before transform:', rgb);
+      const transformedRgb = applyTransform(rgb, config.transformFn, hue);
+      console.log('[generateColorPalette] RGB after transform:', transformedRgb);
+      colors.push(transformedRgb);
+    } catch (error) {
+      console.error(`[generateColorPalette] Error generating color ${i}:`, error);
+      // Push a fallback color so the palette still generates
+      colors.push({ r: 128, g: 128, b: 128 });
+    }
   }
   
   return colors;

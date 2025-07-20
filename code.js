@@ -897,54 +897,65 @@ figma.on("selectionchange", () => {
   }
 });
 figma.ui.onmessage = async (msg) => {
+  console.log("[Plugin] Received message:", msg);
   if (msg.type === "generate-palette" && msg.config) {
-    const colors = generateColorPalette(msg.config);
-    const frame = figma.createFrame();
-    const configString = [
-      msg.config.total,
-      msg.config.hStart,
-      msg.config.hCycles,
-      msg.config.hStartCenter,
-      msg.config.minLight,
-      msg.config.maxLight,
-      msg.config.minSaturation,
-      msg.config.maxSaturation,
-      msg.config.easingMode,
-      msg.config.easingH,
-      msg.config.easingS,
-      msg.config.easingL,
-      msg.config.easingCurve,
-      msg.config.transformFn,
-      msg.config.colorMode,
-      msg.config.rybGamut || "itten"
-    ].join("|");
-    frame.name = `Color Palette [rampensau|${configString}]`;
-    frame.layoutMode = "HORIZONTAL";
-    frame.primaryAxisSizingMode = "AUTO";
-    frame.counterAxisSizingMode = "AUTO";
-    frame.itemSpacing = 0;
-    frame.paddingLeft = 0;
-    frame.paddingRight = 0;
-    frame.paddingTop = 0;
-    frame.paddingBottom = 0;
-    colors.forEach((color, index) => {
-      const rect = figma.createRectangle();
-      rect.name = `Color ${index + 1}`;
-      rect.resize(60, 120);
-      rect.fills = [{
-        type: "SOLID",
-        color: {
-          r: color.r / 255,
-          g: color.g / 255,
-          b: color.b / 255
-        }
-      }];
-      frame.appendChild(rect);
-    });
-    figma.currentPage.appendChild(frame);
-    figma.currentPage.selection = [frame];
-    figma.viewport.scrollAndZoomIntoView([frame]);
-    figma.ui.postMessage({ type: "palette-generated" });
+    console.log("[Plugin] Processing generate-palette with config:", msg.config);
+    try {
+      const colors = generateColorPalette(msg.config);
+      console.log("[Plugin] Generated colors:", colors);
+      const frame = figma.createFrame();
+      console.log("[Plugin] Created frame");
+      const configString = [
+        msg.config.total,
+        msg.config.hStart,
+        msg.config.hCycles,
+        msg.config.hStartCenter,
+        msg.config.minLight,
+        msg.config.maxLight,
+        msg.config.minSaturation,
+        msg.config.maxSaturation,
+        msg.config.easingMode,
+        msg.config.easingH,
+        msg.config.easingS,
+        msg.config.easingL,
+        msg.config.easingCurve,
+        msg.config.transformFn,
+        msg.config.colorMode,
+        msg.config.rybGamut || "itten"
+      ].join("|");
+      frame.name = `Color Palette [rampensau|${configString}]`;
+      frame.layoutMode = "HORIZONTAL";
+      frame.primaryAxisSizingMode = "AUTO";
+      frame.counterAxisSizingMode = "AUTO";
+      frame.itemSpacing = 0;
+      frame.paddingLeft = 0;
+      frame.paddingRight = 0;
+      frame.paddingTop = 0;
+      frame.paddingBottom = 0;
+      colors.forEach((color, index) => {
+        const rect = figma.createRectangle();
+        rect.name = `Color ${index + 1}`;
+        rect.resize(60, 120);
+        rect.fills = [{
+          type: "SOLID",
+          color: {
+            r: color.r / 255,
+            g: color.g / 255,
+            b: color.b / 255
+          }
+        }];
+        frame.appendChild(rect);
+      });
+      figma.currentPage.appendChild(frame);
+      figma.currentPage.selection = [frame];
+      figma.viewport.scrollAndZoomIntoView([frame]);
+      console.log("[Plugin] Frame added to page and selected");
+      figma.ui.postMessage({ type: "palette-generated" });
+      console.log("[Plugin] Success message sent back to UI");
+    } catch (error) {
+      console.error("[Plugin] Error generating palette:", error);
+      figma.ui.postMessage({ type: "error", message: error.toString() });
+    }
   }
   if (msg.type === "cancel") {
     figma.closePlugin();
@@ -1023,9 +1034,11 @@ function rybToRgb(r2, y2, b2, gamut = "itten") {
   };
 }
 function generateColorPalette(config) {
+  console.log("[generateColorPalette] Starting with config:", config);
   const colors = [];
   for (let i2 = 0; i2 < config.total; i2++) {
-    const t2 = i2 / (config.total - 1);
+    const t2 = config.total === 1 ? 0 : i2 / (config.total - 1);
+    console.log(`[generateColorPalette] Color ${i2}: t=${t2}`);
     let hue;
     let saturation;
     let lightness;
@@ -1046,17 +1059,29 @@ function generateColorPalette(config) {
       saturation = config.minSaturation + easedT * (config.maxSaturation - config.minSaturation);
       lightness = config.minLight + easedT * (config.maxLight - config.minLight);
     }
+    console.log(`[generateColorPalette] HSL values: H=${hue}, S=${saturation}, L=${lightness}`);
     let rgb;
-    if (config.colorMode === "oklch") {
-      rgb = oklchToRgb(lightness / 100, saturation / 100 * 0.4, hue);
-    } else if (config.colorMode === "rybitten") {
-      const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
-      rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || "itten");
-    } else {
-      rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
+    try {
+      if (config.colorMode === "oklch") {
+        console.log("[generateColorPalette] Using OKLCH mode");
+        rgb = oklchToRgb(lightness / 100, saturation / 100 * 0.4, hue);
+      } else if (config.colorMode === "rybitten") {
+        console.log("[generateColorPalette] Using RYBitten mode with gamut:", config.rybGamut || "itten");
+        const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
+        console.log("[generateColorPalette] RYB values:", ryb);
+        rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || "itten");
+      } else {
+        console.log("[generateColorPalette] Using HSL mode");
+        rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
+      }
+      console.log("[generateColorPalette] RGB before transform:", rgb);
+      const transformedRgb = applyTransform(rgb, config.transformFn, hue);
+      console.log("[generateColorPalette] RGB after transform:", transformedRgb);
+      colors.push(transformedRgb);
+    } catch (error) {
+      console.error(`[generateColorPalette] Error generating color ${i2}:`, error);
+      colors.push({ r: 128, g: 128, b: 128 });
     }
-    const transformedRgb = applyTransform(rgb, config.transformFn, hue);
-    colors.push(transformedRgb);
   }
   return colors;
 }
