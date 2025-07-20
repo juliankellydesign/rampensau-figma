@@ -34,7 +34,7 @@ figma.on('selectionchange', () => {
           easingCurve: values[12],
           transformFn: values[13],
           colorMode: values[14],
-          rybGamut: values[15] || 'default'
+          rybGamut: values[15] || 'itten'
         };
         
         // Send configuration to UI
@@ -88,7 +88,7 @@ figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) 
       msg.config.easingCurve,
       msg.config.transformFn,
       msg.config.colorMode,
-      msg.config.rybGamut || 'default'
+      msg.config.rybGamut || 'itten'
     ].join('|');
     frame.name = `Color Palette [rampensau|${configString}]`;
     frame.layoutMode = 'HORIZONTAL';
@@ -275,7 +275,7 @@ function generateColorPalette(config: ColorPaletteConfig): { r: number, g: numbe
     } else if (config.colorMode === 'rybitten') {
       // Convert HSL to RYB space
       const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
-      rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || 'default');
+      rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || 'itten');
     } else {
       rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
     }

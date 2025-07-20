@@ -663,7 +663,7 @@
           // For RYBitten, we'll need to handle this differently since we can't use npm modules in the UI
           // We'll keep the simplified version for preview and rely on the main code for actual generation
           const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
-          rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut);
+          rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || 'itten');
         } else {
           rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
         }
