@@ -408,6 +408,7 @@
   
   <script>
     console.log('[UI] Script starting...');
+    console.log('[UI] window.rybittenConvert available:', !!window.rybittenConvert);
     
     // Update range value displays and handle input changes
     document.querySelectorAll('input[type="range"]').forEach(input => {
@@ -589,11 +590,11 @@
       return { r: ry, y: y, b: by };
     }
     
-    function rybToRgb(r, y, b, gamut = 'itten') {
+    function rybToRgb(rVal, yVal, bVal, gamut = 'itten') {
       // Check if we have the real RYBitten library available
       if (window.rybittenConvert) {
         // Use the real RYBitten conversion
-        const rgb = window.rybittenConvert.ryb2rgb([r, y, b], gamut);
+        const rgb = window.rybittenConvert.ryb2rgb([rVal, yVal, bVal], gamut);
         return {
           r: Math.round(Math.max(0, Math.min(255, rgb[0] * 255))),
           g: Math.round(Math.max(0, Math.min(255, rgb[1] * 255))),
@@ -602,27 +603,27 @@
       } else {
         // Fallback to simple conversion if RYBitten not loaded yet
         // This is just a basic RYB to RGB conversion
-        const white = Math.min(r, y, b);
-        const red = r - white;
-        const yellow = y - white;
-        const blue = b - white;
+        const white = Math.min(rVal, yVal, bVal);
+        let redComp = rVal - white;
+        let yellowComp = yVal - white;
+        let blueComp = bVal - white;
         
-        const green = Math.min(yellow, blue);
-        yellow -= green;
-        blue -= green;
+        const greenComp = Math.min(yellowComp, blueComp);
+        yellowComp -= greenComp;
+        blueComp -= greenComp;
         
-        const orange = Math.min(red, yellow) * 0.5;
-        red -= orange;
-        yellow -= orange;
+        const orangeComp = Math.min(redComp, yellowComp) * 0.5;
+        redComp -= orangeComp;
+        yellowComp -= orangeComp;
         
-        const purple = Math.min(red, blue) * 0.5;
-        red -= purple;
-        blue -= purple;
+        const purpleComp = Math.min(redComp, blueComp) * 0.5;
+        redComp -= purpleComp;
+        blueComp -= purpleComp;
         
         return {
-          r: Math.round(Math.max(0, Math.min(255, (red + orange + purple + white) * 255))),
-          g: Math.round(Math.max(0, Math.min(255, (green + orange * 0.5 + white) * 255))),
-          b: Math.round(Math.max(0, Math.min(255, (blue + purple + white) * 255)))
+          r: Math.round(Math.max(0, Math.min(255, (redComp + orangeComp + purpleComp + white) * 255))),
+          g: Math.round(Math.max(0, Math.min(255, (greenComp + orangeComp * 0.5 + white) * 255))),
+          b: Math.round(Math.max(0, Math.min(255, (blueComp + purpleComp + white) * 255)))
         };
       }
     }
@@ -809,8 +810,15 @@
       return { h, s, l };
     }
     
-    // Initial preview
-    updatePreview();
+    // Initial preview - delay to ensure bundle loads first
+    setTimeout(() => {
+      console.log('[UI] Delayed check - window.rybittenConvert available:', !!window.rybittenConvert);
+      try {
+        updatePreview();
+      } catch (error) {
+        console.error('[UI] Error in initial updatePreview:', error);
+      }
+    }, 100);
     
     // Button handlers
     const generateButton = document.getElementById('generate');
