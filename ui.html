@@ -364,17 +364,15 @@
     <div class="control-group">
       <label>Color Mode</label>
       <select id="colorMode">
+        <option value="rybitten">RYBitten</option>
         <option value="hsl">HSL</option>
         <option value="oklch">OKLCH</option>
-        <option value="rybitten">RYBitten</option>
-        <option value="hsv">HSV (coming soon)</option>
       </select>
     </div>
     
-    <div class="control-group" id="rybGamutGroup" style="display: none;">
+    <div class="control-group" id="rybGamutGroup">
       <label>RYBitten Gamut</label>
       <select id="rybGamut">
-        <option value="custom-neutral" selected>Custom Neutral - Muted Hett Colors</option>
         <optgroup label="Historical">
           <option value="boutet">Boutet - Twelve-color circles (1708)</option>
           <option value="harris">Harris - Natural System (1766)</option>
@@ -395,7 +393,7 @@
           <option value="japschool">Japanese School Textbook (1930)</option>
           <option value="bormann">Bormann - Gouache Study (1931)</option>
           <option value="albers">Albers - Interaction of Color (1942)</option>
-          <option value="itten">Itten - Chromatic Circle (1961)</option>
+          <option value="itten" selected>Itten - Chromatic Circle (1961)</option>
           <option value="itten-normalized">Itten Normalized - Paper-white (1961)</option>
           <option value="itten-neutral">Itten/Gossett & Chen - Neutral (1961)</option>
           <option value="lohse">Lohse - Kunsthalle Bern Poster (1970)</option>
@@ -425,6 +423,9 @@
   </div>
   
   <script>
+    console.log('[UI] Script starting...');
+    console.log('[UI] window.rybittenConvert available:', !!window.rybittenConvert);
+    
     // Update range value displays and handle input changes
     document.querySelectorAll('input[type="range"]').forEach(input => {
       const valueInput = document.getElementById(input.id + 'Value');
@@ -605,11 +606,11 @@
       return { r: ry, y: y, b: by };
     }
     
-    function rybToRgb(r, y, b, gamut = 'custom-neutral') {
+    function rybToRgb(rVal, yVal, bVal, gamut = 'itten') {
       // Check if we have the real RYBitten library available
       if (window.rybittenConvert) {
         // Use the real RYBitten conversion
-        const rgb = window.rybittenConvert.ryb2rgb([r, y, b], gamut);
+        const rgb = window.rybittenConvert.ryb2rgb([rVal, yVal, bVal], gamut);
         return {
           r: Math.round(Math.max(0, Math.min(255, rgb[0] * 255))),
           g: Math.round(Math.max(0, Math.min(255, rgb[1] * 255))),
@@ -618,27 +619,27 @@
       } else {
         // Fallback to simple conversion if RYBitten not loaded yet
         // This is just a basic RYB to RGB conversion
-        const white = Math.min(r, y, b);
-        const red = r - white;
-        const yellow = y - white;
-        const blue = b - white;
+        const white = Math.min(rVal, yVal, bVal);
+        let redComp = rVal - white;
+        let yellowComp = yVal - white;
+        let blueComp = bVal - white;
         
-        const green = Math.min(yellow, blue);
-        yellow -= green;
-        blue -= green;
+        const greenComp = Math.min(yellowComp, blueComp);
+        yellowComp -= greenComp;
+        blueComp -= greenComp;
         
-        const orange = Math.min(red, yellow) * 0.5;
-        red -= orange;
-        yellow -= orange;
+        const orangeComp = Math.min(redComp, yellowComp) * 0.5;
+        redComp -= orangeComp;
+        yellowComp -= orangeComp;
         
-        const purple = Math.min(red, blue) * 0.5;
-        red -= purple;
-        blue -= purple;
+        const purpleComp = Math.min(redComp, blueComp) * 0.5;
+        redComp -= purpleComp;
+        blueComp -= purpleComp;
         
         return {
-          r: Math.round(Math.max(0, Math.min(255, (red + orange + purple + white) * 255))),
-          g: Math.round(Math.max(0, Math.min(255, (green + orange * 0.5 + white) * 255))),
-          b: Math.round(Math.max(0, Math.min(255, (blue + purple + white) * 255)))
+          r: Math.round(Math.max(0, Math.min(255, (redComp + orangeComp + purpleComp + white) * 255))),
+          g: Math.round(Math.max(0, Math.min(255, (greenComp + orangeComp * 0.5 + white) * 255))),
+          b: Math.round(Math.max(0, Math.min(255, (blueComp + purpleComp + white) * 255)))
         };
       }
     }
@@ -681,7 +682,7 @@
           // For RYBitten, we'll need to handle this differently since we can't use npm modules in the UI
           // We'll keep the simplified version for preview and rely on the main code for actual generation
           const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
-          rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut);
+          rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || 'itten');
         } else {
           rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
         }
@@ -751,8 +752,12 @@
     }
     
     function harveyHue(h) {
-      // Harvey Hue transformation to create more evenly distributed spectrum
-      // Based on Harvey Rayner's work, adapted for RampenSau
+      // Use harvey hue from rampensau if available, otherwise fall back to custom implementation
+      if (window.rampensauUtils && window.rampensauUtils.harveyHue) {
+        return window.rampensauUtils.harveyHue(h);
+      }
+      
+      // Fallback implementation
       const hNorm = h % 1;
       let hTransformed;
       
@@ -821,14 +826,36 @@
       return { h, s, l };
     }
     
-    // Initial preview
-    updatePreview();
+    // Initial preview - delay to ensure bundle loads first
+    setTimeout(() => {
+      console.log('[UI] Delayed check - window.rybittenConvert available:', !!window.rybittenConvert);
+      try {
+        updatePreview();
+      } catch (error) {
+        console.error('[UI] Error in initial updatePreview:', error);
+      }
+    }, 100);
     
     // Button handlers
-    document.getElementById('generate').onclick = () => {
-      const config = getConfig();
-      parent.postMessage({ pluginMessage: { type: 'generate-palette', config } }, '*');
-    };
+    const generateButton = document.getElementById('generate');
+    console.log('[UI] Generate button element:', generateButton);
+    
+    if (generateButton) {
+      generateButton.onclick = () => {
+        console.log('[UI] Generate button clicked');
+        try {
+          const config = getConfig();
+          console.log('[UI] Config:', config);
+          console.log('[UI] Sending message to plugin');
+          parent.postMessage({ pluginMessage: { type: 'generate-palette', config } }, '*');
+          console.log('[UI] Message sent successfully');
+        } catch (error) {
+          console.error('[UI] Error in generate button handler:', error);
+        }
+      };
+    } else {
+      console.error('[UI] Generate button not found!');
+    }
     
     document.getElementById('cancel').onclick = () => {
       parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*');
@@ -836,8 +863,10 @@
     
     // Listen for messages from the plugin
     window.onmessage = (event) => {
+      console.log('[UI] Received message:', event.data);
       if (event.data.pluginMessage) {
         if (event.data.pluginMessage.type === 'palette-generated') {
+          console.log('[UI] Palette generated successfully');
           // Could show a success message or update UI
         } else if (event.data.pluginMessage.type === 'load-config') {
           // Load configuration into UI

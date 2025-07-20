@@ -1,5 +1,6 @@
 import { ryb2rgb } from 'rybitten';
 import { cubes } from 'rybitten/cubes';
+import { utils } from 'rampensau';
 
 figma.showUI(__html__, { width: 400, height: 600 });
 
@@ -33,7 +34,7 @@ figma.on('selectionchange', () => {
           easingCurve: values[12],
           transformFn: values[13],
           colorMode: values[14],
-          rybGamut: values[15] || 'custom-neutral'
+          rybGamut: values[15] || 'itten'
         };
         
         // Send configuration to UI
@@ -66,10 +67,17 @@ interface ColorPaletteConfig {
 }
 
 figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) => {
+  console.log('[Plugin] Received message:', msg);
+  
   if (msg.type === 'generate-palette' && msg.config) {
-    const colors = generateColorPalette(msg.config);
+    console.log('[Plugin] Processing generate-palette with config:', msg.config);
     
-    const frame = figma.createFrame();
+    try {
+      const colors = generateColorPalette(msg.config);
+      console.log('[Plugin] Generated colors:', colors);
+      
+      const frame = figma.createFrame();
+      console.log('[Plugin] Created frame');
     // Store the configuration in the frame name as a compact encoded string
     const configString = [
       msg.config.total,
@@ -87,7 +95,7 @@ figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) 
       msg.config.easingCurve,
       msg.config.transformFn,
       msg.config.colorMode,
-      msg.config.rybGamut || 'custom-neutral'
+      msg.config.rybGamut || 'itten'
     ].join('|');
     frame.name = `Color Palette [rampensau|${configString}]`;
     frame.layoutMode = 'HORIZONTAL';
@@ -114,18 +122,18 @@ figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) 
       frame.appendChild(rect);
     });
     
-    // Get viewport center
-    const viewportCenter = figma.viewport.center;
-    
-    // Position frame at viewport center
-    frame.x = Math.round(viewportCenter.x - frame.width / 2);
-    frame.y = Math.round(viewportCenter.y - frame.height / 2);
-    
-    figma.currentPage.appendChild(frame);
-    figma.currentPage.selection = [frame];
-    figma.viewport.scrollAndZoomIntoView([frame]);
-    
-    figma.ui.postMessage({ type: 'palette-generated' });
+      figma.currentPage.appendChild(frame);
+      figma.currentPage.selection = [frame];
+      figma.viewport.scrollAndZoomIntoView([frame]);
+      
+      console.log('[Plugin] Frame added to page and selected');
+      figma.ui.postMessage({ type: 'palette-generated' });
+      console.log('[Plugin] Success message sent back to UI');
+    } catch (error) {
+      console.error('[Plugin] Error generating palette:', error);
+      // Send error message back to UI
+      figma.ui.postMessage({ type: 'error', message: error.toString() });
+    }
   }
   
   if (msg.type === 'cancel') {
@@ -228,30 +236,10 @@ function hslToRyb(h: number, s: number, l: number): { r: number, y: number, b: n
   return { r: ry, y: y, b: by };
 }
 
-// Define the same neutral Itten cube as in ui.ts
-// Based on Hett RGV but with 30% gray mixed in for better saturation control
-const neutralIttenCube = [
-  [255/255, 255/255, 255/255],  // white - pure white like Hett
-  [218/255 * 0.7 + 128/255 * 0.3, 105/255 * 0.7 + 128/255 * 0.3, 104/255 * 0.7 + 128/255 * 0.3],  // red mixed with gray
-  [255/255 * 0.7 + 128/255 * 0.3, 244/255 * 0.7 + 128/255 * 0.3, 122/255 * 0.7 + 128/255 * 0.3],  // yellow mixed with gray
-  [232/255 * 0.7 + 128/255 * 0.3, 154/255 * 0.7 + 128/255 * 0.3, 113/255 * 0.7 + 128/255 * 0.3],  // orange mixed with gray
-  [73/255 * 0.7 + 128/255 * 0.3, 138/255 * 0.7 + 128/255 * 0.3, 186/255 * 0.7 + 128/255 * 0.3],   // blue mixed with gray
-  [97/255 * 0.7 + 128/255 * 0.3, 96/255 * 0.7 + 128/255 * 0.3, 178/255 * 0.7 + 128/255 * 0.3],    // violet mixed with gray
-  [144/255 * 0.7 + 128/255 * 0.3, 191/255 * 0.7 + 128/255 * 0.3, 140/255 * 0.7 + 128/255 * 0.3], // green mixed with gray
-  [8/255, 8/255, 8/255]         // black - pure black like Hett
-];
-
-function rybToRgb(r: number, y: number, b: number, gamut: string = 'custom-neutral'): { r: number, g: number, b: number } {
-  let cube;
-  
-  // Handle our custom gamut
-  if (gamut === 'custom-neutral') {
-    cube = neutralIttenCube as any;
-  } else {
-    // Get the cube for the specified gamut
-    const cubeData = cubes.get(gamut);
-    cube = cubeData ? cubeData.cube : undefined;
-  }
+function rybToRgb(r: number, y: number, b: number, gamut: string = 'itten'): { r: number, g: number, b: number } {
+  // Get the cube for the specified gamut
+  const cubeData = cubes.get(gamut);
+  const cube = cubeData ? cubeData.cube : undefined;
   
   // Use the RYBitten library with the specified cube
   const rgb = ryb2rgb([r, y, b], { cube });
@@ -264,10 +252,12 @@ function rybToRgb(r: number, y: number, b: number, gamut: string = 'custom-neutr
 }
 
 function generateColorPalette(config: ColorPaletteConfig): { r: number, g: number, b: number }[] {
+  console.log('[generateColorPalette] Starting with config:', config);
   const colors: { r: number, g: number, b: number }[] = [];
   
   for (let i = 0; i < config.total; i++) {
-    const t = i / (config.total - 1);
+    const t = config.total === 1 ? 0 : i / (config.total - 1);
+    console.log(`[generateColorPalette] Color ${i}: t=${t}`);
     
     let hue: number;
     let saturation: number;
@@ -295,19 +285,33 @@ function generateColorPalette(config: ColorPaletteConfig): { r: number, g: numbe
       lightness = config.minLight + easedT * (config.maxLight - config.minLight);
     }
     
-    let rgb: { r: number, g: number, b: number };
-    if (config.colorMode === 'oklch') {
-      rgb = oklchToRgb(lightness / 100, saturation / 100 * 0.4, hue);
-    } else if (config.colorMode === 'rybitten') {
-      // Convert HSL to RYB space
-      const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
-      rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || 'custom-neutral');
-    } else {
-      rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
-    }
+    console.log(`[generateColorPalette] HSL values: H=${hue}, S=${saturation}, L=${lightness}`);
     
-    const transformedRgb = applyTransform(rgb, config.transformFn, hue);
-    colors.push(transformedRgb);
+    let rgb: { r: number, g: number, b: number };
+    try {
+      if (config.colorMode === 'oklch') {
+        console.log('[generateColorPalette] Using OKLCH mode');
+        rgb = oklchToRgb(lightness / 100, saturation / 100 * 0.4, hue);
+      } else if (config.colorMode === 'rybitten') {
+        console.log('[generateColorPalette] Using RYBitten mode with gamut:', config.rybGamut || 'itten');
+        // Convert HSL to RYB space
+        const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
+        console.log('[generateColorPalette] RYB values:', ryb);
+        rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || 'itten');
+      } else {
+        console.log('[generateColorPalette] Using HSL mode');
+        rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
+      }
+      
+      console.log('[generateColorPalette] RGB before transform:', rgb);
+      const transformedRgb = applyTransform(rgb, config.transformFn, hue);
+      console.log('[generateColorPalette] RGB after transform:', transformedRgb);
+      colors.push(transformedRgb);
+    } catch (error) {
+      console.error(`[generateColorPalette] Error generating color ${i}:`, error);
+      // Push a fallback color so the palette still generates
+      colors.push({ r: 128, g: 128, b: 128 });
+    }
   }
   
   return colors;
@@ -370,26 +374,7 @@ function hslToRgb(h: number, s: number, l: number): { r: number, g: number, b: n
   };
 }
 
-function harveyHue(h: number): number {
-  // Harvey Hue transformation to create more evenly distributed spectrum
-  // Based on Harvey Rayner's work, adapted for RampenSau
-  const hNorm = h % 1;
-  let hTransformed: number;
-  
-  if (hNorm < 0.0833) {
-    hTransformed = hNorm * 0.5 / 0.0833;
-  } else if (hNorm < 0.1667) {
-    hTransformed = 0.5 + (hNorm - 0.0833) * 0.5 / 0.0833;
-  } else if (hNorm < 0.5) {
-    hTransformed = 1 + (hNorm - 0.1667) * 2 / 0.3333;
-  } else if (hNorm < 0.8333) {
-    hTransformed = 3 + (hNorm - 0.5) * 2 / 0.3333;
-  } else {
-    hTransformed = 5 + (hNorm - 0.8333) * 1 / 0.1667;
-  }
-  
-  return (hTransformed / 6) % 1;
-}
+// Use harveyHue from rampensau utils
 
 function rgbToHsl(r: number, g: number, b: number): { h: number, s: number, l: number } {
   r /= 255;
@@ -420,11 +405,12 @@ function rgbToHsl(r: number, g: number, b: number): { h: number, s: number, l: n
 
 function applyTransform(rgb: { r: number, g: number, b: number }, transformFn: string, originalHue?: number): { r: number, g: number, b: number } {
   switch (transformFn) {
-    case 'harveyHue':
+    case 'harveyHue': {
       // Convert back to HSL, apply Harvey Hue, then back to RGB
       const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
-      const transformedHue = harveyHue((originalHue || 0) / 360);
+      const transformedHue = utils.harveyHue((originalHue || 0) / 360);
       return hslToRgb(transformedHue, hsl.s, hsl.l);
+    }
     case 'muted':
       return {
         r: Math.round(rgb.r * 0.8),
