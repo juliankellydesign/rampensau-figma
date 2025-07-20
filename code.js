@@ -589,7 +589,7 @@ figma.on("selectionchange", () => {
           easingCurve: values[12],
           transformFn: values[13],
           colorMode: values[14],
-          rybGamut: values[15] || "default"
+          rybGamut: values[15] || "custom-neutral"
         };
         figma.ui.postMessage({
           type: "load-config",
@@ -619,7 +619,7 @@ figma.ui.onmessage = async (msg) => {
       msg.config.easingCurve,
       msg.config.transformFn,
       msg.config.colorMode,
-      msg.config.rybGamut || "default"
+      msg.config.rybGamut || "custom-neutral"
     ].join("|");
     frame.name = `Color Palette [rampensau|${configString}]`;
     frame.layoutMode = "HORIZONTAL";
@@ -644,6 +644,9 @@ figma.ui.onmessage = async (msg) => {
       }];
       frame.appendChild(rect);
     });
+    const viewportCenter = figma.viewport.center;
+    frame.x = Math.round(viewportCenter.x - frame.width / 2);
+    frame.y = Math.round(viewportCenter.y - frame.height / 2);
     figma.currentPage.appendChild(frame);
     figma.currentPage.selection = [frame];
     figma.viewport.scrollAndZoomIntoView([frame]);
@@ -715,9 +718,32 @@ function hslToRyb(h2, s2, l3) {
   by += w;
   return { r: ry, y: y2, b: by };
 }
-function rybToRgb(r2, y2, b2, gamut = "itten") {
-  const cubeData = e.get(gamut);
-  const cube = cubeData ? cubeData.cube : void 0;
+var neutralIttenCube = [
+  [255 / 255, 255 / 255, 255 / 255],
+  // white - pure white like Hett
+  [218 / 255 * 0.7 + 128 / 255 * 0.3, 105 / 255 * 0.7 + 128 / 255 * 0.3, 104 / 255 * 0.7 + 128 / 255 * 0.3],
+  // red mixed with gray
+  [255 / 255 * 0.7 + 128 / 255 * 0.3, 244 / 255 * 0.7 + 128 / 255 * 0.3, 122 / 255 * 0.7 + 128 / 255 * 0.3],
+  // yellow mixed with gray
+  [232 / 255 * 0.7 + 128 / 255 * 0.3, 154 / 255 * 0.7 + 128 / 255 * 0.3, 113 / 255 * 0.7 + 128 / 255 * 0.3],
+  // orange mixed with gray
+  [73 / 255 * 0.7 + 128 / 255 * 0.3, 138 / 255 * 0.7 + 128 / 255 * 0.3, 186 / 255 * 0.7 + 128 / 255 * 0.3],
+  // blue mixed with gray
+  [97 / 255 * 0.7 + 128 / 255 * 0.3, 96 / 255 * 0.7 + 128 / 255 * 0.3, 178 / 255 * 0.7 + 128 / 255 * 0.3],
+  // violet mixed with gray
+  [144 / 255 * 0.7 + 128 / 255 * 0.3, 191 / 255 * 0.7 + 128 / 255 * 0.3, 140 / 255 * 0.7 + 128 / 255 * 0.3],
+  // green mixed with gray
+  [8 / 255, 8 / 255, 8 / 255]
+  // black - pure black like Hett
+];
+function rybToRgb(r2, y2, b2, gamut = "custom-neutral") {
+  let cube;
+  if (gamut === "custom-neutral") {
+    cube = neutralIttenCube;
+  } else {
+    const cubeData = e.get(gamut);
+    cube = cubeData ? cubeData.cube : void 0;
+  }
   const rgb = k([r2, y2, b2], { cube });
   return {
     r: Math.round(Math.max(0, Math.min(255, rgb[0] * 255))),
@@ -754,7 +780,7 @@ function generateColorPalette(config) {
       rgb = oklchToRgb(lightness / 100, saturation / 100 * 0.4, hue);
     } else if (config.colorMode === "rybitten") {
       const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
-      rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || "default");
+      rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || "custom-neutral");
     } else {
       rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
     }

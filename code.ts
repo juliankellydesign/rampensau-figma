@@ -33,7 +33,7 @@ figma.on('selectionchange', () => {
           easingCurve: values[12],
           transformFn: values[13],
           colorMode: values[14],
-          rybGamut: values[15] || 'default'
+          rybGamut: values[15] || 'custom-neutral'
         };
         
         // Send configuration to UI
@@ -87,7 +87,7 @@ figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) 
       msg.config.easingCurve,
       msg.config.transformFn,
       msg.config.colorMode,
-      msg.config.rybGamut || 'default'
+      msg.config.rybGamut || 'custom-neutral'
     ].join('|');
     frame.name = `Color Palette [rampensau|${configString}]`;
     frame.layoutMode = 'HORIZONTAL';
@@ -113,6 +113,13 @@ figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) 
       }];
       frame.appendChild(rect);
     });
+    
+    // Get viewport center
+    const viewportCenter = figma.viewport.center;
+    
+    // Position frame at viewport center
+    frame.x = Math.round(viewportCenter.x - frame.width / 2);
+    frame.y = Math.round(viewportCenter.y - frame.height / 2);
     
     figma.currentPage.appendChild(frame);
     figma.currentPage.selection = [frame];
@@ -221,10 +228,30 @@ function hslToRyb(h: number, s: number, l: number): { r: number, y: number, b: n
   return { r: ry, y: y, b: by };
 }
 
-function rybToRgb(r: number, y: number, b: number, gamut: string = 'itten'): { r: number, g: number, b: number } {
-  // Get the cube for the specified gamut
-  const cubeData = cubes.get(gamut);
-  const cube = cubeData ? cubeData.cube : undefined;
+// Define the same neutral Itten cube as in ui.ts
+// Based on Hett RGV but with 30% gray mixed in for better saturation control
+const neutralIttenCube = [
+  [255/255, 255/255, 255/255],  // white - pure white like Hett
+  [218/255 * 0.7 + 128/255 * 0.3, 105/255 * 0.7 + 128/255 * 0.3, 104/255 * 0.7 + 128/255 * 0.3],  // red mixed with gray
+  [255/255 * 0.7 + 128/255 * 0.3, 244/255 * 0.7 + 128/255 * 0.3, 122/255 * 0.7 + 128/255 * 0.3],  // yellow mixed with gray
+  [232/255 * 0.7 + 128/255 * 0.3, 154/255 * 0.7 + 128/255 * 0.3, 113/255 * 0.7 + 128/255 * 0.3],  // orange mixed with gray
+  [73/255 * 0.7 + 128/255 * 0.3, 138/255 * 0.7 + 128/255 * 0.3, 186/255 * 0.7 + 128/255 * 0.3],   // blue mixed with gray
+  [97/255 * 0.7 + 128/255 * 0.3, 96/255 * 0.7 + 128/255 * 0.3, 178/255 * 0.7 + 128/255 * 0.3],    // violet mixed with gray
+  [144/255 * 0.7 + 128/255 * 0.3, 191/255 * 0.7 + 128/255 * 0.3, 140/255 * 0.7 + 128/255 * 0.3], // green mixed with gray
+  [8/255, 8/255, 8/255]         // black - pure black like Hett
+];
+
+function rybToRgb(r: number, y: number, b: number, gamut: string = 'custom-neutral'): { r: number, g: number, b: number } {
+  let cube;
+  
+  // Handle our custom gamut
+  if (gamut === 'custom-neutral') {
+    cube = neutralIttenCube as any;
+  } else {
+    // Get the cube for the specified gamut
+    const cubeData = cubes.get(gamut);
+    cube = cubeData ? cubeData.cube : undefined;
+  }
   
   // Use the RYBitten library with the specified cube
   const rgb = ryb2rgb([r, y, b], { cube });
@@ -274,7 +301,7 @@ function generateColorPalette(config: ColorPaletteConfig): { r: number, g: numbe
     } else if (config.colorMode === 'rybitten') {
       // Convert HSL to RYB space
       const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
-      rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || 'default');
+      rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || 'custom-neutral');
     } else {
       rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
     }

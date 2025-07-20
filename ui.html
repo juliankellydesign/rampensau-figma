@@ -374,25 +374,42 @@
     <div class="control-group" id="rybGamutGroup" style="display: none;">
       <label>RYBitten Gamut</label>
       <select id="rybGamut">
-        <option value="itten">Itten - Chromatic Circle (1961)</option>
-        <option value="itten-normalized">Itten Normalized - Paper-white (1961)</option>
-        <option value="bezold">Bezold - Farbentafel (1874)</option>
-        <option value="boutet">Boutet - Twelve-color circles (1708)</option>
-        <option value="hett">Hett - RGV Color Wheel (1908)</option>
-        <option value="schiffermueller">Schiffermüller - Farbensystems (1772)</option>
-        <option value="harris">Harris - Natural System (1766)</option>
-        <option value="goethe">Goethe - Farbenkreis (1809)</option>
-        <option value="munsell">Munsell Color System (1905)</option>
-        <option value="hayer">Hayter - Three Primitive Colours (1826)</option>
-        <option value="bormann">Bormann - Gouache Study (1931)</option>
-        <option value="chevreul">Chevreul - Chromatic Circle (1839)</option>
-        <option value="maycock">Maycock - Scale of Normal Colors (1895)</option>
-        <option value="colorprinter">Earhart - The Color Printer (1892)</option>
-        <option value="japschool">Japanese School Textbook (1930)</option>
-        <option value="kindergarten1890">Bradley - Kindergarten Material (1890)</option>
-        <option value="albers">Albers - Interaction of Color (1942)</option>
-        <option value="lohse">Lohse - Kunsthalle Bern Poster (1970)</option>
-        <option value="rgb">Maxwell - Inverted RGB (1860)</option>
+        <option value="custom-neutral" selected>Custom Neutral - Muted Hett Colors</option>
+        <optgroup label="Historical">
+          <option value="boutet">Boutet - Twelve-color circles (1708)</option>
+          <option value="harris">Harris - Natural System (1766)</option>
+          <option value="harrisc82">Harris/C82 - Natural System (1766)</option>
+          <option value="harrisc82alt">Harris/C82 Alt - Natural System (1766)</option>
+          <option value="schiffermueller">Schiffermüller - Farbensystems (1772)</option>
+          <option value="goethe">Goethe - Farbenkreis (1809)</option>
+          <option value="hayer">Hayter - Three Primitive Colours (1826)</option>
+          <option value="chevreul">Chevreul - Chromatic Circle (1839)</option>
+          <option value="rgb">Maxwell - Inverted RGB (1860)</option>
+          <option value="bezold">Bezold - Farbentafel (1874)</option>
+          <option value="kindergarten1890">Bradley - Kindergarten Material (1890)</option>
+          <option value="colorprinter">Earhart - The Color Printer (1892)</option>
+          <option value="maycock">Maycock - Scale of Normal Colors (1895)</option>
+          <option value="munsell">Munsell Color System (1905)</option>
+          <option value="munsell-alt">Munsell/Cleland - A Grammar of Color (1921)</option>
+          <option value="hett">Hett - RGV Color Wheel (1908)</option>
+          <option value="japschool">Japanese School Textbook (1930)</option>
+          <option value="bormann">Bormann - Gouache Study (1931)</option>
+          <option value="albers">Albers - Interaction of Color (1942)</option>
+          <option value="itten">Itten - Chromatic Circle (1961)</option>
+          <option value="itten-normalized">Itten Normalized - Paper-white (1961)</option>
+          <option value="itten-neutral">Itten/Gossett & Chen - Neutral (1961)</option>
+          <option value="lohse">Lohse - Kunsthalle Bern Poster (1970)</option>
+        </optgroup>
+        <optgroup label="Contemporary">
+          <option value="marvel-news">Marvel Comics - 64 Color Chart (1982)</option>
+          <option value="apple90s">Apple - Macintosh Reference Manual (1990)</option>
+          <option value="apple80s">Apple - HyperCard User Manual (1989)</option>
+          <option value="clayton">Clayton - Intrinsic Value Plate (2017)</option>
+          <option value="pixelart">Tofu - Pixel Art (2024)</option>
+          <option value="ippsketch">Ippsketch - Imposter Syndrome (2021)</option>
+          <option value="ryan">Ryan - Compositions Palette (2024)</option>
+          <option value="ten">Kaufman - Ten (2022)</option>
+        </optgroup>
       </select>
     </div>
   </div>
@@ -588,7 +605,7 @@
       return { r: ry, y: y, b: by };
     }
     
-    function rybToRgb(r, y, b, gamut = 'itten') {
+    function rybToRgb(r, y, b, gamut = 'custom-neutral') {
       // Check if we have the real RYBitten library available
       if (window.rybittenConvert) {
         // Use the real RYBitten conversion
