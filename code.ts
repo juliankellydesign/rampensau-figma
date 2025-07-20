@@ -1,5 +1,6 @@
 import { ryb2rgb } from 'rybitten';
 import { cubes } from 'rybitten/cubes';
+import { utils } from 'rampensau';
 
 figma.showUI(__html__, { width: 400, height: 600 });
 
@@ -343,26 +344,8 @@ function hslToRgb(h: number, s: number, l: number): { r: number, g: number, b: n
   };
 }
 
-function harveyHue(h: number): number {
-  // Harvey Hue transformation to create more evenly distributed spectrum
-  // Based on Harvey Rayner's work, adapted for RampenSau
-  const hNorm = h % 1;
-  let hTransformed: number;
-  
-  if (hNorm < 0.0833) {
-    hTransformed = hNorm * 0.5 / 0.0833;
-  } else if (hNorm < 0.1667) {
-    hTransformed = 0.5 + (hNorm - 0.0833) * 0.5 / 0.0833;
-  } else if (hNorm < 0.5) {
-    hTransformed = 1 + (hNorm - 0.1667) * 2 / 0.3333;
-  } else if (hNorm < 0.8333) {
-    hTransformed = 3 + (hNorm - 0.5) * 2 / 0.3333;
-  } else {
-    hTransformed = 5 + (hNorm - 0.8333) * 1 / 0.1667;
-  }
-  
-  return (hTransformed / 6) % 1;
-}
+// Use harveyHue from rampensau utils
+const { harveyHue } = utils;
 
 function rgbToHsl(r: number, g: number, b: number): { h: number, s: number, l: number } {
   r /= 255;
@@ -393,11 +376,12 @@ function rgbToHsl(r: number, g: number, b: number): { h: number, s: number, l: n
 
 function applyTransform(rgb: { r: number, g: number, b: number }, transformFn: string, originalHue?: number): { r: number, g: number, b: number } {
   switch (transformFn) {
-    case 'harveyHue':
+    case 'harveyHue': {
       // Convert back to HSL, apply Harvey Hue, then back to RGB
       const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
       const transformedHue = harveyHue((originalHue || 0) / 360);
       return hslToRgb(transformedHue, hsl.s, hsl.l);
+    }
     case 'muted':
       return {
         r: Math.round(rgb.r * 0.8),

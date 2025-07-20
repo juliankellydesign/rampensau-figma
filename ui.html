@@ -364,14 +364,13 @@
     <div class="control-group">
       <label>Color Mode</label>
       <select id="colorMode">
+        <option value="rybitten">RYBitten</option>
         <option value="hsl">HSL</option>
         <option value="oklch">OKLCH</option>
-        <option value="rybitten">RYBitten</option>
-        <option value="hsv">HSV (coming soon)</option>
       </select>
     </div>
     
-    <div class="control-group" id="rybGamutGroup" style="display: none;">
+    <div class="control-group" id="rybGamutGroup">
       <label>RYBitten Gamut</label>
       <select id="rybGamut">
         <option value="itten">Itten - Chromatic Circle (1961)</option>
@@ -734,8 +733,12 @@
     }
     
     function harveyHue(h) {
-      // Harvey Hue transformation to create more evenly distributed spectrum
-      // Based on Harvey Rayner's work, adapted for RampenSau
+      // Use harvey hue from rampensau if available, otherwise fall back to custom implementation
+      if (window.rampensauUtils && window.rampensauUtils.harveyHue) {
+        return window.rampensauUtils.harveyHue(h);
+      }
+      
+      // Fallback implementation
       const hNorm = h % 1;
       let hTransformed;
       
