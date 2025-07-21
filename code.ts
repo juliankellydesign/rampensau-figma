@@ -1,6 +1,6 @@
 import { ryb2rgb } from 'rybitten';
 import { cubes } from 'rybitten/cubes';
-import { utils } from 'rampensau';
+import { colorUtils } from 'rampensau';
 
 figma.showUI(__html__, { width: 400, height: 600 });
 
@@ -17,7 +17,7 @@ figma.on('selectionchange', () => {
     if (match) {
       // Parse the compact encoded values
       const values = match[1].split('|');
-      if (values.length === 15 || values.length === 16) {
+      if (values.length >= 15) {
         const config: ColorPaletteConfig = {
           total: parseInt(values[0]),
           hStart: parseFloat(values[1]),
@@ -36,6 +36,25 @@ figma.on('selectionchange', () => {
           colorMode: values[14],
           rybGamut: values[15] || 'itten'
         };
+        
+        // Check if there's custom cube data (17th value)
+        if (values.length === 17 && values[15] === 'custom' && values[16]) {
+          const hexColors = values[16].split(',');
+          if (hexColors.length === 8) {
+            config.customCube = hexColors.map(hex => {
+              // Convert hex to RGB array [0-1]
+              const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+              if (result) {
+                return [
+                  parseInt(result[1], 16) / 255,
+                  parseInt(result[2], 16) / 255,
+                  parseInt(result[3], 16) / 255
+                ];
+              }
+              return [0, 0, 0];
+            });
+          }
+        }
         
         // Send configuration to UI
         figma.ui.postMessage({
@@ -64,6 +83,7 @@ interface ColorPaletteConfig {
   transformFn: string;
   colorMode: string;
   rybGamut?: string;
+  customCube?: number[][];
 }
 
 figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) => {
@@ -79,7 +99,7 @@ figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) 
       const frame = figma.createFrame();
       console.log('[Plugin] Created frame');
     // Store the configuration in the frame name as a compact encoded string
-    const configString = [
+    let configArray = [
       msg.config.total,
       msg.config.hStart,
       msg.config.hCycles,
@@ -96,7 +116,21 @@ figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) 
       msg.config.transformFn,
       msg.config.colorMode,
       msg.config.rybGamut || 'itten'
-    ].join('|');
+    ];
+    
+    // If custom gamut, append the cube colors as hex values
+    if (msg.config.rybGamut === 'custom' && msg.config.customCube) {
+      const cubeHex = msg.config.customCube.map(color => {
+        // Convert RGB array [0-1] to hex
+        const r = Math.round(color[0] * 255).toString(16).padStart(2, '0');
+        const g = Math.round(color[1] * 255).toString(16).padStart(2, '0');
+        const b = Math.round(color[2] * 255).toString(16).padStart(2, '0');
+        return `#${r}${g}${b}`;
+      }).join(',');
+      configArray.push(cubeHex);
+    }
+    
+    const configString = configArray.join('|');
     frame.name = `Color Palette [rampensau|${configString}]`;
     frame.layoutMode = 'HORIZONTAL';
     frame.primaryAxisSizingMode = 'AUTO';
@@ -122,6 +156,11 @@ figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) 
       frame.appendChild(rect);
     });
     
+      // Position frame at center of viewport
+      const viewportCenter = figma.viewport.center;
+      frame.x = Math.round(viewportCenter.x - frame.width / 2);
+      frame.y = Math.round(viewportCenter.y - frame.height / 2);
+      
       figma.currentPage.appendChild(frame);
       figma.currentPage.selection = [frame];
       figma.viewport.scrollAndZoomIntoView([frame]);
@@ -236,10 +275,17 @@ function hslToRyb(h: number, s: number, l: number): { r: number, y: number, b: n
   return { r: ry, y: y, b: by };
 }
 
-function rybToRgb(r: number, y: number, b: number, gamut: string = 'itten'): { r: number, g: number, b: number } {
-  // Get the cube for the specified gamut
-  const cubeData = cubes.get(gamut);
-  const cube = cubeData ? cubeData.cube : undefined;
+function rybToRgb(r: number, y: number, b: number, gamut: string = 'itten', customCube?: number[][]): { r: number, g: number, b: number } {
+  let cube;
+  
+  if (gamut === 'custom' && customCube) {
+    // Use the custom cube directly
+    cube = customCube;
+  } else {
+    // Get the cube for the specified gamut
+    const cubeData = cubes.get(gamut);
+    cube = cubeData ? cubeData.cube : undefined;
+  }
   
   // Use the RYBitten library with the specified cube
   const rgb = ryb2rgb([r, y, b], { cube });
@@ -297,7 +343,7 @@ function generateColorPalette(config: ColorPaletteConfig): { r: number, g: numbe
         // Convert HSL to RYB space
         const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
         console.log('[generateColorPalette] RYB values:', ryb);
-        rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || 'itten');
+        rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || 'itten', config.customCube);
       } else {
         console.log('[generateColorPalette] Using HSL mode');
         rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
@@ -374,7 +420,7 @@ function hslToRgb(h: number, s: number, l: number): { r: number, g: number, b: n
   };
 }
 
-// Use harveyHue from rampensau utils
+// Use harveyHue from rampensau colorUtils
 
 function rgbToHsl(r: number, g: number, b: number): { h: number, s: number, l: number } {
   r /= 255;
@@ -408,7 +454,7 @@ function applyTransform(rgb: { r: number, g: number, b: number }, transformFn: s
     case 'harveyHue': {
       // Convert back to HSL, apply Harvey Hue, then back to RGB
       const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
-      const transformedHue = utils.harveyHue((originalHue || 0) / 360);
+      const transformedHue = colorUtils.harveyHue((originalHue || 0) / 360);
       return hslToRgb(transformedHue, hsl.s, hsl.l);
     }
     case 'muted':

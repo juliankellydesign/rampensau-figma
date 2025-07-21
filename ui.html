@@ -154,6 +154,75 @@
     .easing-controls.active {
       display: block;
     }
+    
+    /* Custom Cube Editor Styles */
+    .custom-cube-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 12px;
+      background: #f7f7f7;
+      border-radius: 4px;
+    }
+    
+    .cube-diagram {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+    
+    .cube-colors {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .color-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    
+    .color-input-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .color-input-group label {
+      font-size: 10px;
+      color: #666;
+      margin-bottom: 2px;
+    }
+    
+    .color-input-group input[type="color"] {
+      width: 40px;
+      height: 40px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .cube-preview {
+      margin-top: 8px;
+    }
+    
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(4, 20px);
+      gap: 2px;
+      margin-top: 8px;
+      padding: 8px;
+      background: white;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+    
+    .preview-cell {
+      border-radius: 2px;
+    }
   </style>
 </head>
 <body>
@@ -408,7 +477,82 @@
           <option value="ryan">Ryan - Compositions Palette (2024)</option>
           <option value="ten">Kaufman - Ten (2022)</option>
         </optgroup>
+        <option value="custom">Custom</option>
       </select>
+    </div>
+    
+    <div class="control-group" id="customCubeEditor" style="display: none;">
+      <label>Custom Color Cube</label>
+      <div class="custom-cube-container">
+        <div class="cube-diagram">
+          <svg width="120" height="100" viewBox="0 0 120 100">
+            <g stroke="#333" stroke-width="1" fill="none">
+              <!-- Back face -->
+              <rect x="30" y="10" width="50" height="50" stroke-dasharray="2,2"/>
+              <!-- Front face -->
+              <rect x="10" y="30" width="50" height="50"/>
+              <!-- Connecting lines -->
+              <line x1="10" y1="30" x2="30" y2="10"/>
+              <line x1="60" y1="30" x2="80" y2="10"/>
+              <line x1="10" y1="80" x2="30" y2="60"/>
+              <line x1="60" y1="80" x2="80" y2="60"/>
+            </g>
+            <!-- Corner labels -->
+            <text x="5" y="25" font-size="10" fill="#666">W</text>
+            <text x="65" y="25" font-size="10" fill="#666">R</text>
+            <text x="5" y="90" font-size="10" fill="#666">B</text>
+            <text x="65" y="90" font-size="10" fill="#666">Y</text>
+            <text x="25" y="5" font-size="10" fill="#666">K</text>
+            <text x="85" y="5" font-size="10" fill="#666">O</text>
+            <text x="25" y="70" font-size="10" fill="#666">V</text>
+            <text x="85" y="70" font-size="10" fill="#666">G</text>
+          </svg>
+        </div>
+        <div class="cube-colors">
+          <div class="color-row">
+            <div class="color-input-group">
+              <label>White</label>
+              <input type="color" id="cubeWhite" value="#ffffff">
+            </div>
+            <div class="color-input-group">
+              <label>Red</label>
+              <input type="color" id="cubeRed" value="#da6968">
+            </div>
+            <div class="color-input-group">
+              <label>Yellow</label>
+              <input type="color" id="cubeYellow" value="#fff47a">
+            </div>
+            <div class="color-input-group">
+              <label>Blue</label>
+              <input type="color" id="cubeBlue" value="#498aba">
+            </div>
+          </div>
+          <div class="color-row">
+            <div class="color-input-group">
+              <label>Black</label>
+              <input type="color" id="cubeBlack" value="#080808">
+            </div>
+            <div class="color-input-group">
+              <label>Orange</label>
+              <input type="color" id="cubeOrange" value="#e89a71">
+            </div>
+            <div class="color-input-group">
+              <label>Green</label>
+              <input type="color" id="cubeGreen" value="#90bf8c">
+            </div>
+            <div class="color-input-group">
+              <label>Violet</label>
+              <input type="color" id="cubeViolet" value="#6160b2">
+            </div>
+          </div>
+        </div>
+        <div class="cube-preview">
+          <label>Preview</label>
+          <div class="preview-grid">
+            <!-- Will be populated by JavaScript -->
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   
@@ -469,15 +613,153 @@
     // Handle color mode change to show/hide RYBitten gamut
     document.getElementById('colorMode').addEventListener('change', (e) => {
       const rybGamutGroup = document.getElementById('rybGamutGroup');
+      const customCubeEditor = document.getElementById('customCubeEditor');
       if (e.target.value === 'rybitten') {
         rybGamutGroup.style.display = 'block';
+        // Check if custom gamut is selected
+        if (document.getElementById('rybGamut').value === 'custom') {
+          customCubeEditor.style.display = 'block';
+        }
       } else {
         rybGamutGroup.style.display = 'none';
+        customCubeEditor.style.display = 'none';
       }
     });
     
+    // Handle RYBitten gamut change to show/hide custom cube editor
+    let previousGamut = document.getElementById('rybGamut').value;
+    document.getElementById('rybGamut').addEventListener('change', (e) => {
+      const customCubeEditor = document.getElementById('customCubeEditor');
+      if (e.target.value === 'custom') {
+        customCubeEditor.style.display = 'block';
+        
+        // Copy colors from the previous gamut if it wasn't custom
+        if (previousGamut !== 'custom' && window.rybittenConvert) {
+          const gamutCube = window.rybittenConvert.getGamutCube(previousGamut);
+          if (gamutCube) {
+            const rgbToHex = (rgb) => {
+              const r = Math.round(rgb[0] * 255).toString(16).padStart(2, '0');
+              const g = Math.round(rgb[1] * 255).toString(16).padStart(2, '0');
+              const b = Math.round(rgb[2] * 255).toString(16).padStart(2, '0');
+              return `#${r}${g}${b}`;
+            };
+            
+            document.getElementById('cubeWhite').value = rgbToHex(gamutCube[0]);
+            document.getElementById('cubeRed').value = rgbToHex(gamutCube[1]);
+            document.getElementById('cubeYellow').value = rgbToHex(gamutCube[2]);
+            document.getElementById('cubeOrange').value = rgbToHex(gamutCube[3]);
+            document.getElementById('cubeBlue').value = rgbToHex(gamutCube[4]);
+            document.getElementById('cubeViolet').value = rgbToHex(gamutCube[5]);
+            document.getElementById('cubeGreen').value = rgbToHex(gamutCube[6]);
+            document.getElementById('cubeBlack').value = rgbToHex(gamutCube[7]);
+          }
+        }
+        
+        updateCubePreview();
+      } else {
+        customCubeEditor.style.display = 'none';
+      }
+      previousGamut = e.target.value;
+      updatePreview();
+    });
+    
+    // Handle custom cube color changes
+    const cubeColorInputs = ['cubeWhite', 'cubeRed', 'cubeYellow', 'cubeBlue', 'cubeBlack', 'cubeOrange', 'cubeGreen', 'cubeViolet'];
+    cubeColorInputs.forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        updateCubePreview();
+        updatePreview();
+      });
+    });
+    
+    // Function to get custom cube colors
+    function getCustomCube() {
+      const hexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? [
+          parseInt(result[1], 16) / 255,
+          parseInt(result[2], 16) / 255,
+          parseInt(result[3], 16) / 255
+        ] : [0, 0, 0];
+      };
+      
+      return [
+        hexToRgb(document.getElementById('cubeWhite').value),
+        hexToRgb(document.getElementById('cubeRed').value),
+        hexToRgb(document.getElementById('cubeYellow').value),
+        hexToRgb(document.getElementById('cubeOrange').value),
+        hexToRgb(document.getElementById('cubeBlue').value),
+        hexToRgb(document.getElementById('cubeViolet').value),
+        hexToRgb(document.getElementById('cubeGreen').value),
+        hexToRgb(document.getElementById('cubeBlack').value)
+      ];
+    }
+    
+    // Function to update cube preview
+    function updateCubePreview() {
+      const previewGrid = document.querySelector('.preview-grid');
+      previewGrid.innerHTML = '';
+      
+      const cube = getCustomCube();
+      const samples = [];
+      
+      // Generate sample RYB coordinates
+      for (let r = 0; r <= 1; r += 0.25) {
+        for (let y = 0; y <= 1; y += 0.25) {
+          for (let b = 0; b <= 1; b += 0.5) {
+            samples.push({ r, y, b });
+          }
+        }
+      }
+      
+      // Sort samples for better visual arrangement
+      samples.sort((a, b) => {
+        const sumA = a.r + a.y + a.b;
+        const sumB = b.r + b.y + b.b;
+        return sumA - sumB;
+      });
+      
+      // Display first 32 samples
+      samples.slice(0, 32).forEach(sample => {
+        const rgb = rybToRgbCustom(sample.r, sample.y, sample.b, cube);
+        const cell = document.createElement('div');
+        cell.className = 'preview-cell';
+        cell.style.backgroundColor = `rgb(${Math.round(rgb[0] * 255)}, ${Math.round(rgb[1] * 255)}, ${Math.round(rgb[2] * 255)})`;
+        cell.title = `RYB(${sample.r.toFixed(2)}, ${sample.y.toFixed(2)}, ${sample.b.toFixed(2)})`;
+        previewGrid.appendChild(cell);
+      });
+    }
+    
+    // Custom RYB to RGB conversion using trilinear interpolation
+    function rybToRgbCustom(r, y, b, cube) {
+      // Ensure inputs are in [0,1] range
+      r = Math.max(0, Math.min(1, r));
+      y = Math.max(0, Math.min(1, y));
+      b = Math.max(0, Math.min(1, b));
+      
+      // Trilinear interpolation
+      const c000 = cube[0]; // white
+      const c100 = cube[1]; // red
+      const c010 = cube[2]; // yellow
+      const c110 = cube[3]; // orange
+      const c001 = cube[4]; // blue
+      const c101 = cube[5]; // violet
+      const c011 = cube[6]; // green
+      const c111 = cube[7]; // black
+      
+      const c00 = c000.map((v, i) => v * (1 - r) + c100[i] * r);
+      const c01 = c001.map((v, i) => v * (1 - r) + c101[i] * r);
+      const c10 = c010.map((v, i) => v * (1 - r) + c110[i] * r);
+      const c11 = c011.map((v, i) => v * (1 - r) + c111[i] * r);
+      
+      const c0 = c00.map((v, i) => v * (1 - y) + c10[i] * y);
+      const c1 = c01.map((v, i) => v * (1 - y) + c11[i] * y);
+      
+      return c0.map((v, i) => v * (1 - b) + c1[i] * b);
+    }
+    
     function getConfig() {
-      return {
+      const config = {
         total: parseInt(document.getElementById('total').value),
         hStart: parseFloat(document.getElementById('hStart').value),
         hCycles: parseFloat(document.getElementById('hCycles').value),
@@ -495,6 +777,13 @@
         colorMode: document.getElementById('colorMode').value,
         rybGamut: document.getElementById('rybGamut').value
       };
+      
+      // Include custom cube data if custom gamut is selected
+      if (config.rybGamut === 'custom') {
+        config.customCube = getCustomCube();
+      }
+      
+      return config;
     }
     
     function updatePreview() {
@@ -682,7 +971,20 @@
           // For RYBitten, we'll need to handle this differently since we can't use npm modules in the UI
           // We'll keep the simplified version for preview and rely on the main code for actual generation
           const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
-          rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || 'itten');
+          if (config.rybGamut === 'custom' && config.customCube) {
+            // Debug logging
+            if (i === 0) {
+              console.log('[UI] Custom cube preview - first color:', { ryb, customCube: config.customCube });
+            }
+            rgb = rybToRgbCustom(ryb.r, ryb.y, ryb.b, config.customCube);
+            rgb = {
+              r: Math.round(rgb[0] * 255),
+              g: Math.round(rgb[1] * 255),
+              b: Math.round(rgb[2] * 255)
+            };
+          } else {
+            rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || 'itten');
+          }
         } else {
           rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
         }
@@ -830,6 +1132,12 @@
     setTimeout(() => {
       console.log('[UI] Delayed check - window.rybittenConvert available:', !!window.rybittenConvert);
       try {
+        // Check if custom gamut is selected on load
+        if (document.getElementById('colorMode').value === 'rybitten' && 
+            document.getElementById('rybGamut').value === 'custom') {
+          document.getElementById('customCubeEditor').style.display = 'block';
+          updateCubePreview();
+        }
         updatePreview();
       } catch (error) {
         console.error('[UI] Error in initial updatePreview:', error);
@@ -909,6 +1217,25 @@
             document.getElementById('rybGamut').value = config.rybGamut;
           }
           
+          // Load custom cube colors if present
+          if (config.rybGamut === 'custom' && config.customCube) {
+            const rgbToHex = (rgb) => {
+              const r = Math.round(rgb[0] * 255).toString(16).padStart(2, '0');
+              const g = Math.round(rgb[1] * 255).toString(16).padStart(2, '0');
+              const b = Math.round(rgb[2] * 255).toString(16).padStart(2, '0');
+              return `#${r}${g}${b}`;
+            };
+            
+            document.getElementById('cubeWhite').value = rgbToHex(config.customCube[0]);
+            document.getElementById('cubeRed').value = rgbToHex(config.customCube[1]);
+            document.getElementById('cubeYellow').value = rgbToHex(config.customCube[2]);
+            document.getElementById('cubeOrange').value = rgbToHex(config.customCube[3]);
+            document.getElementById('cubeBlue').value = rgbToHex(config.customCube[4]);
+            document.getElementById('cubeViolet').value = rgbToHex(config.customCube[5]);
+            document.getElementById('cubeGreen').value = rgbToHex(config.customCube[6]);
+            document.getElementById('cubeBlack').value = rgbToHex(config.customCube[7]);
+          }
+          
           // Trigger easing mode change to show/hide correct controls
           const changeEvent = new Event('change');
           document.getElementById('easingMode').dispatchEvent(changeEvent);
@@ -916,6 +1243,10 @@
           // Also trigger color mode change to show/hide RYB gamut
           const colorModeEvent = new Event('change');
           document.getElementById('colorMode').dispatchEvent(colorModeEvent);
+          
+          // Also trigger RYB gamut change to show custom cube editor if needed
+          const gamutEvent = new Event('change');
+          document.getElementById('rybGamut').dispatchEvent(gamutEvent);
           
           // Update preview
           updatePreview();

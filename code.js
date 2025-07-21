@@ -869,7 +869,7 @@ figma.on("selectionchange", () => {
     const match = frame.name.match(/\[rampensau\|(.+)\]$/);
     if (match) {
       const values = match[1].split("|");
-      if (values.length === 15 || values.length === 16) {
+      if (values.length >= 15) {
         const config = {
           total: parseInt(values[0]),
           hStart: parseFloat(values[1]),
@@ -888,6 +888,22 @@ figma.on("selectionchange", () => {
           colorMode: values[14],
           rybGamut: values[15] || "itten"
         };
+        if (values.length === 17 && values[15] === "custom" && values[16]) {
+          const hexColors = values[16].split(",");
+          if (hexColors.length === 8) {
+            config.customCube = hexColors.map((hex) => {
+              const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+              if (result) {
+                return [
+                  parseInt(result[1], 16) / 255,
+                  parseInt(result[2], 16) / 255,
+                  parseInt(result[3], 16) / 255
+                ];
+              }
+              return [0, 0, 0];
+            });
+          }
+        }
         figma.ui.postMessage({
           type: "load-config",
           config
@@ -905,7 +921,7 @@ figma.ui.onmessage = async (msg) => {
       console.log("[Plugin] Generated colors:", colors);
       const frame = figma.createFrame();
       console.log("[Plugin] Created frame");
-      const configString = [
+      let configArray = [
         msg.config.total,
         msg.config.hStart,
         msg.config.hCycles,
@@ -922,7 +938,17 @@ figma.ui.onmessage = async (msg) => {
         msg.config.transformFn,
         msg.config.colorMode,
         msg.config.rybGamut || "itten"
-      ].join("|");
+      ];
+      if (msg.config.rybGamut === "custom" && msg.config.customCube) {
+        const cubeHex = msg.config.customCube.map((color) => {
+          const r2 = Math.round(color[0] * 255).toString(16).padStart(2, "0");
+          const g3 = Math.round(color[1] * 255).toString(16).padStart(2, "0");
+          const b2 = Math.round(color[2] * 255).toString(16).padStart(2, "0");
+          return `#${r2}${g3}${b2}`;
+        }).join(",");
+        configArray.push(cubeHex);
+      }
+      const configString = configArray.join("|");
       frame.name = `Color Palette [rampensau|${configString}]`;
       frame.layoutMode = "HORIZONTAL";
       frame.primaryAxisSizingMode = "AUTO";
@@ -946,6 +972,9 @@ figma.ui.onmessage = async (msg) => {
         }];
         frame.appendChild(rect);
       });
+      const viewportCenter = figma.viewport.center;
+      frame.x = Math.round(viewportCenter.x - frame.width / 2);
+      frame.y = Math.round(viewportCenter.y - frame.height / 2);
       figma.currentPage.appendChild(frame);
       figma.currentPage.selection = [frame];
       figma.viewport.scrollAndZoomIntoView([frame]);
@@ -1023,9 +1052,14 @@ function hslToRyb(h2, s2, l3) {
   by += w;
   return { r: ry, y: y2, b: by };
 }
-function rybToRgb(r2, y2, b2, gamut = "itten") {
-  const cubeData = e.get(gamut);
-  const cube = cubeData ? cubeData.cube : void 0;
+function rybToRgb(r2, y2, b2, gamut = "itten", customCube) {
+  let cube;
+  if (gamut === "custom" && customCube) {
+    cube = customCube;
+  } else {
+    const cubeData = e.get(gamut);
+    cube = cubeData ? cubeData.cube : void 0;
+  }
   const rgb = k([r2, y2, b2], { cube });
   return {
     r: Math.round(Math.max(0, Math.min(255, rgb[0] * 255))),
@@ -1069,7 +1103,7 @@ function generateColorPalette(config) {
         console.log("[generateColorPalette] Using RYBitten mode with gamut:", config.rybGamut || "itten");
         const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
         console.log("[generateColorPalette] RYB values:", ryb);
-        rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || "itten");
+        rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || "itten", config.customCube);
       } else {
         console.log("[generateColorPalette] Using HSL mode");
         rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
@@ -1192,7 +1226,7 @@ function applyTransform(rgb, transformFn, originalHue) {
   switch (transformFn) {
     case "harveyHue": {
       const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
-      const transformedHue = utils_exports.harveyHue((originalHue || 0) / 360);
+      const transformedHue = colorUtils_exports.harveyHue((originalHue || 0) / 360);
       return hslToRgb(transformedHue, hsl.s, hsl.l);
     }
     case "muted":

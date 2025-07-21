@@ -1,11 +1,12 @@
 import { ryb2rgb } from 'rybitten';
 import { cubes } from 'rybitten/cubes';
-import { utils } from 'rampensau';
+import { colorUtils } from 'rampensau';
 
 // Define the rybittenConvert interface
 interface RybittenConvert {
   ryb2rgb: (coords: [number, number, number], gamutName: string) => number[];
   getAvailableGamuts: () => { [key: string]: string };
+  getGamutCube: (gamutName: string) => number[][] | undefined;
 }
 
 // Define the rampensau utils interface  
@@ -35,10 +36,16 @@ window.rybittenConvert = {
       gamutList[key] = `${value.title} by ${value.author} (${value.year})`;
     });
     return gamutList;
+  },
+  
+  // Get the cube for a specific gamut
+  getGamutCube: (gamutName: string) => {
+    const cubeData = cubes.get(gamutName);
+    return cubeData ? cubeData.cube : undefined;
   }
 };
 
 // Expose rampensau utils
 window.rampensauUtils = {
-  harveyHue: utils.harveyHue
+  harveyHue: colorUtils.harveyHue
 };
