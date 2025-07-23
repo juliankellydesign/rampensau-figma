@@ -44,8 +44,50 @@
       border-radius: 4px;
     }
     
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #ff0000;
+    }
+    
     input[type="range"] {
       margin: 4px 0;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      background: #ddd;
+      border-radius: 3px;
+      outline: none;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #ff0000;
+      cursor: pointer;
+    }
+    
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #ff0000;
+      cursor: pointer;
+      border: none;
+    }
+    
+    input[type="range"]:focus {
+      outline: none;
+    }
+    
+    input[type="range"]:focus::-webkit-slider-thumb {
+      box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.2);
+    }
+    
+    input[type="range"]:focus::-moz-range-thumb {
+      box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.2);
     }
     
     select {
@@ -53,6 +95,11 @@
       border: 1px solid #ccc;
       border-radius: 4px;
       background: white;
+    }
+    
+    select:focus {
+      outline: none;
+      border-color: #ff0000;
     }
     
     .range-value {
@@ -67,7 +114,7 @@
     
     .range-value:focus {
       outline: none;
-      border-color: #18a0fb;
+      border-color: #ff0000;
     }
     
     .range-container {
@@ -93,12 +140,12 @@
     }
     
     #generate {
-      background: #18a0fb;
+      background: #ff0000;
       color: white;
     }
     
     #generate:hover {
-      background: #0090e7;
+      background: #cc0000;
     }
     
     #cancel {
@@ -202,6 +249,12 @@
       border: 1px solid #ddd;
       border-radius: 4px;
       cursor: pointer;
+    }
+    
+    .color-input-group input[type="color"]:focus {
+      outline: none;
+      border-color: #ff0000;
+      box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.2);
     }
     
     .cube-preview {
