@@ -3,18 +3,7 @@ const fs = require('fs');
 
 async function build() {
   try {
-    // Build the main plugin code
-    await esbuild.build({
-      entryPoints: ['code.ts'],
-      bundle: true,
-      outfile: 'code.js',
-      target: 'es2017',
-      format: 'cjs',
-      loader: { '.ts': 'ts' },
-      external: [], // Bundle everything including rybitten
-    });
-
-    // Build the UI bundle
+    // Build the UI bundle first
     await esbuild.build({
       entryPoints: ['ui.ts'],
       bundle: true,
@@ -43,8 +32,26 @@ async function build() {
       );
     }
     
-    // Write the updated HTML
-    fs.writeFileSync('ui.html', html);
+    // Write the complete HTML with bundle
+    fs.writeFileSync('ui-complete.html', html);
+    
+    // Create the __html__ variable for code.ts
+    const htmlContent = html.replace(/`/g, '\\`').replace(/\$/g, '\\$');
+    const htmlVariable = `const __html__ = \`${htmlContent}\`;\n`;
+    
+    // Build the main plugin code with HTML injected
+    await esbuild.build({
+      entryPoints: ['code.ts'],
+      bundle: true,
+      outfile: 'code.js',
+      target: 'es2017',
+      format: 'cjs',
+      loader: { '.ts': 'ts' },
+      external: [],
+      banner: {
+        js: htmlVariable
+      }
+    });
 
     console.log('Build completed successfully!');
   } catch (error) {

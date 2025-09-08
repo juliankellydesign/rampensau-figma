@@ -2,6 +2,7 @@ import { ryb2rgb } from 'rybitten';
 import { cubes } from 'rybitten/cubes';
 import { colorUtils } from 'rampensau';
 
+// @ts-expect-error __html__ is injected by the build process
 figma.showUI(__html__, { width: 400, height: 600 });
 
 // Listen for selection changes
@@ -99,7 +100,7 @@ figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) 
       const frame = figma.createFrame();
       console.log('[Plugin] Created frame');
     // Store the configuration in the frame name as a compact encoded string
-    let configArray = [
+    const configArray = [
       msg.config.total,
       msg.config.hStart,
       msg.config.hCycles,
@@ -171,7 +172,7 @@ figma.ui.onmessage = async (msg: { type: string, config?: ColorPaletteConfig }) 
     } catch (error) {
       console.error('[Plugin] Error generating palette:', error);
       // Send error message back to UI
-      figma.ui.postMessage({ type: 'error', message: error.toString() });
+      figma.ui.postMessage({ type: 'error', message: error instanceof Error ? error.message : String(error) });
     }
   }
   
@@ -276,7 +277,7 @@ function hslToRyb(h: number, s: number, l: number): { r: number, y: number, b: n
 }
 
 function rybToRgb(r: number, y: number, b: number, gamut: string = 'itten', customCube?: number[][]): { r: number, g: number, b: number } {
-  let cube;
+  let cube: unknown;
   
   if (gamut === 'custom' && customCube) {
     // Use the custom cube directly

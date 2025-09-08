@@ -1,3 +1,1848 @@
+const __html__ = `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-size: 12px;
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    h2 {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+    }
+    
+    .control-group {
+      margin-bottom: 12px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 500;
+      color: #333;
+    }
+    
+    input[type="number"],
+    input[type="range"],
+    select {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    input[type="number"] {
+      padding: 4px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    
+    input[type="range"] {
+      margin: 4px 0;
+    }
+    
+    select {
+      padding: 4px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: white;
+    }
+    
+    .range-value {
+      width: 50px;
+      padding: 2px 4px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      text-align: right;
+      color: #333;
+      font-size: 11px;
+    }
+    
+    .range-value:focus {
+      outline: none;
+      border-color: #18a0fb;
+    }
+    
+    .range-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 24px;
+      margin-bottom: 16px;
+    }
+    
+    button {
+      flex: 1;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    
+    #generate {
+      background: #18a0fb;
+      color: white;
+    }
+    
+    #generate:hover {
+      background: #0090e7;
+    }
+    
+    #cancel {
+      background: #f0f0f0;
+      color: #333;
+    }
+    
+    #cancel:hover {
+      background: #e0e0e0;
+    }
+    
+    .content-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      padding-bottom: 100px; /* Space for fixed preview */
+    }
+    
+    .preview-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border-top: 1px solid #ddd;
+      padding: 16px;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .preview {
+      display: flex;
+      height: 60px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 0;
+    }
+    
+    .preview-color {
+      flex: 1;
+    }
+    
+    .section {
+      border-top: 1px solid #eee;
+      margin-top: 16px;
+      padding-top: 16px;
+    }
+    
+    .easing-controls {
+      display: none;
+    }
+    
+    .easing-controls.active {
+      display: block;
+    }
+    
+    /* Custom Cube Editor Styles */
+    .custom-cube-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 12px;
+      background: #f7f7f7;
+      border-radius: 4px;
+    }
+    
+    .cube-diagram {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+    
+    .cube-colors {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .color-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    
+    .color-input-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .color-input-group label {
+      font-size: 10px;
+      color: #666;
+      margin-bottom: 2px;
+    }
+    
+    .color-input-group input[type="color"] {
+      width: 40px;
+      height: 40px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .cube-preview {
+      margin-top: 8px;
+    }
+    
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(4, 20px);
+      gap: 2px;
+      margin-top: 8px;
+      padding: 8px;
+      background: white;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+    
+    .preview-cell {
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="content-wrapper">
+    <div class="control-group">
+    <label>Total Colors</label>
+    <div class="range-container">
+      <input type="range" id="total" min="2" max="20" value="7">
+      <input type="number" class="range-value" id="totalValue" value="7" min="2" max="20">
+    </div>
+  </div>
+  
+  <div class="control-group">
+    <label>Hue Start (°)</label>
+    <div class="range-container">
+      <input type="range" id="hStart" min="0" max="360" value="0">
+      <input type="number" class="range-value" id="hStartValue" value="0" min="0" max="360">
+    </div>
+  </div>
+  
+  <div class="control-group">
+    <label>Hue Cycles</label>
+    <div class="range-container">
+      <input type="range" id="hCycles" min="-2" max="2" step="0.1" value="0.3">
+      <input type="number" class="range-value" id="hCyclesValue" value="0.3" min="-2" max="2" step="0.1">
+    </div>
+  </div>
+  
+  <div class="control-group">
+    <label>Hue Start Center</label>
+    <div class="range-container">
+      <input type="range" id="hStartCenter" min="0" max="1" step="0.01" value="0.1">
+      <input type="number" class="range-value" id="hStartCenterValue" value="0.1" min="0" max="1" step="0.01">
+    </div>
+  </div>
+  
+  <div class="section">
+    <div class="control-group">
+      <label>Min Lightness (%)</label>
+      <div class="range-container">
+        <input type="range" id="minLight" min="0" max="100" value="67">
+        <input type="number" class="range-value" id="minLightValue" value="67" min="0" max="100">
+      </div>
+    </div>
+    
+    <div class="control-group">
+      <label>Max Lightness (%)</label>
+      <div class="range-container">
+        <input type="range" id="maxLight" min="0" max="100" value="84">
+        <input type="number" class="range-value" id="maxLightValue" value="84" min="0" max="100">
+      </div>
+    </div>
+    
+    <div class="control-group">
+      <label>Min Saturation (%)</label>
+      <div class="range-container">
+        <input type="range" id="minSaturation" min="0" max="100" value="67">
+        <input type="number" class="range-value" id="minSaturationValue" value="67" min="0" max="100">
+      </div>
+    </div>
+    
+    <div class="control-group">
+      <label>Max Saturation (%)</label>
+      <div class="range-container">
+        <input type="range" id="maxSaturation" min="0" max="100" value="81">
+        <input type="number" class="range-value" id="maxSaturationValue" value="81" min="0" max="100">
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <div class="control-group">
+      <label>Easing Mode</label>
+      <select id="easingMode">
+        <option value="individualAxis">Individual Axis</option>
+        <option value="slCurve">S/L Curve</option>
+      </select>
+    </div>
+    
+    <div class="easing-controls active" id="individualAxisControls">
+      <div class="control-group">
+        <label>Hue Easing</label>
+        <select id="easingH">
+          <option value="linear">Linear</option>
+          <option value="easeInSine">Ease In Sine</option>
+          <option value="easeOutSine">Ease Out Sine</option>
+          <option value="easeInOutSine">Ease In Out Sine</option>
+          <option value="easeInQuad">Ease In Quad</option>
+          <option value="easeOutQuad">Ease Out Quad</option>
+          <option value="easeInOutQuad">Ease In Out Quad</option>
+          <option value="easeInCubic">Ease In Cubic</option>
+          <option value="easeOutCubic">Ease Out Cubic</option>
+          <option value="easeInOutCubic">Ease In Out Cubic</option>
+          <option value="easeInQuart">Ease In Quart</option>
+          <option value="easeOutQuart">Ease Out Quart</option>
+          <option value="easeInOutQuart">Ease In Out Quart</option>
+          <option value="easeInQuint">Ease In Quint</option>
+          <option value="easeOutQuint">Ease Out Quint</option>
+          <option value="easeInOutQuint">Ease In Out Quint</option>
+          <option value="easeInExpo">Ease In Expo</option>
+          <option value="easeOutExpo">Ease Out Expo</option>
+          <option value="easeInOutExpo">Ease In Out Expo</option>
+          <option value="easeInCirc">Ease In Circ</option>
+          <option value="easeOutCirc">Ease Out Circ</option>
+          <option value="easeInOutCirc">Ease In Out Circ</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label>Saturation Easing</label>
+        <select id="easingS">
+          <option value="linear">Linear</option>
+          <option value="easeInSine">Ease In Sine</option>
+          <option value="easeOutSine">Ease Out Sine</option>
+          <option value="easeInOutSine">Ease In Out Sine</option>
+          <option value="easeInQuad">Ease In Quad</option>
+          <option value="easeOutQuad">Ease Out Quad</option>
+          <option value="easeInOutQuad">Ease In Out Quad</option>
+          <option value="easeInCubic">Ease In Cubic</option>
+          <option value="easeOutCubic">Ease Out Cubic</option>
+          <option value="easeInOutCubic">Ease In Out Cubic</option>
+          <option value="easeInQuart">Ease In Quart</option>
+          <option value="easeOutQuart">Ease Out Quart</option>
+          <option value="easeInOutQuart">Ease In Out Quart</option>
+          <option value="easeInQuint">Ease In Quint</option>
+          <option value="easeOutQuint">Ease Out Quint</option>
+          <option value="easeInOutQuint">Ease In Out Quint</option>
+          <option value="easeInExpo">Ease In Expo</option>
+          <option value="easeOutExpo">Ease Out Expo</option>
+          <option value="easeInOutExpo">Ease In Out Expo</option>
+          <option value="easeInCirc">Ease In Circ</option>
+          <option value="easeOutCirc">Ease Out Circ</option>
+          <option value="easeInOutCirc">Ease In Out Circ</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label>Lightness Easing</label>
+        <select id="easingL">
+          <option value="linear">Linear</option>
+          <option value="easeInSine">Ease In Sine</option>
+          <option value="easeOutSine">Ease Out Sine</option>
+          <option value="easeInOutSine">Ease In Out Sine</option>
+          <option value="easeInQuad">Ease In Quad</option>
+          <option value="easeOutQuad">Ease Out Quad</option>
+          <option value="easeInOutQuad">Ease In Out Quad</option>
+          <option value="easeInCubic">Ease In Cubic</option>
+          <option value="easeOutCubic">Ease Out Cubic</option>
+          <option value="easeInOutCubic">Ease In Out Cubic</option>
+          <option value="easeInQuart">Ease In Quart</option>
+          <option value="easeOutQuart">Ease Out Quart</option>
+          <option value="easeInOutQuart">Ease In Out Quart</option>
+          <option value="easeInQuint">Ease In Quint</option>
+          <option value="easeOutQuint">Ease Out Quint</option>
+          <option value="easeInOutQuint">Ease In Out Quint</option>
+          <option value="easeInExpo">Ease In Expo</option>
+          <option value="easeOutExpo">Ease Out Expo</option>
+          <option value="easeInOutExpo">Ease In Out Expo</option>
+          <option value="easeInCirc">Ease In Circ</option>
+          <option value="easeOutCirc">Ease Out Circ</option>
+          <option value="easeInOutCirc">Ease In Out Circ</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="easing-controls" id="slCurveControls">
+      <div class="control-group">
+        <label>Curve Easing</label>
+        <select id="easingCurve">
+          <option value="linear">Linear</option>
+          <option value="easeInSine">Ease In Sine</option>
+          <option value="easeOutSine">Ease Out Sine</option>
+          <option value="easeInOutSine">Ease In Out Sine</option>
+          <option value="easeInQuad">Ease In Quad</option>
+          <option value="easeOutQuad">Ease Out Quad</option>
+          <option value="easeInOutQuad">Ease In Out Quad</option>
+          <option value="easeInCubic">Ease In Cubic</option>
+          <option value="easeOutCubic">Ease Out Cubic</option>
+          <option value="easeInOutCubic">Ease In Out Cubic</option>
+          <option value="easeInQuart">Ease In Quart</option>
+          <option value="easeOutQuart">Ease Out Quart</option>
+          <option value="easeInOutQuart">Ease In Out Quart</option>
+          <option value="easeInQuint">Ease In Quint</option>
+          <option value="easeOutQuint">Ease Out Quint</option>
+          <option value="easeInOutQuint">Ease In Out Quint</option>
+          <option value="easeInExpo">Ease In Expo</option>
+          <option value="easeOutExpo">Ease Out Expo</option>
+          <option value="easeInOutExpo">Ease In Out Expo</option>
+          <option value="easeInCirc">Ease In Circ</option>
+          <option value="easeOutCirc">Ease Out Circ</option>
+          <option value="easeInOutCirc">Ease In Out Circ</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <div class="control-group">
+      <label>Transform Function</label>
+      <select id="transformFn">
+        <option value="none">None</option>
+        <option value="harveyHue">Harvey Hue</option>
+        <option value="muted">Muted</option>
+        <option value="pastel">Pastel</option>
+      </select>
+    </div>
+    
+    <div class="control-group">
+      <label>Color Mode</label>
+      <select id="colorMode">
+        <option value="rybitten">RYBitten</option>
+        <option value="hsl">HSL</option>
+        <option value="oklch">OKLCH</option>
+      </select>
+    </div>
+    
+    <div class="control-group" id="rybGamutGroup">
+      <label>RYBitten Gamut</label>
+      <select id="rybGamut">
+        <optgroup label="Historical">
+          <option value="boutet">Boutet - Twelve-color circles (1708)</option>
+          <option value="harris">Harris - Natural System (1766)</option>
+          <option value="harrisc82">Harris/C82 - Natural System (1766)</option>
+          <option value="harrisc82alt">Harris/C82 Alt - Natural System (1766)</option>
+          <option value="schiffermueller">Schiffermüller - Farbensystems (1772)</option>
+          <option value="goethe">Goethe - Farbenkreis (1809)</option>
+          <option value="hayer">Hayter - Three Primitive Colours (1826)</option>
+          <option value="chevreul">Chevreul - Chromatic Circle (1839)</option>
+          <option value="rgb">Maxwell - Inverted RGB (1860)</option>
+          <option value="bezold">Bezold - Farbentafel (1874)</option>
+          <option value="kindergarten1890">Bradley - Kindergarten Material (1890)</option>
+          <option value="colorprinter">Earhart - The Color Printer (1892)</option>
+          <option value="maycock">Maycock - Scale of Normal Colors (1895)</option>
+          <option value="munsell">Munsell Color System (1905)</option>
+          <option value="munsell-alt">Munsell/Cleland - A Grammar of Color (1921)</option>
+          <option value="hett">Hett - RGV Color Wheel (1908)</option>
+          <option value="japschool">Japanese School Textbook (1930)</option>
+          <option value="bormann">Bormann - Gouache Study (1931)</option>
+          <option value="albers">Albers - Interaction of Color (1942)</option>
+          <option value="itten" selected>Itten - Chromatic Circle (1961)</option>
+          <option value="itten-normalized">Itten Normalized - Paper-white (1961)</option>
+          <option value="itten-neutral">Itten/Gossett & Chen - Neutral (1961)</option>
+          <option value="lohse">Lohse - Kunsthalle Bern Poster (1970)</option>
+        </optgroup>
+        <optgroup label="Contemporary">
+          <option value="marvel-news">Marvel Comics - 64 Color Chart (1982)</option>
+          <option value="apple90s">Apple - Macintosh Reference Manual (1990)</option>
+          <option value="apple80s">Apple - HyperCard User Manual (1989)</option>
+          <option value="clayton">Clayton - Intrinsic Value Plate (2017)</option>
+          <option value="pixelart">Tofu - Pixel Art (2024)</option>
+          <option value="ippsketch">Ippsketch - Imposter Syndrome (2021)</option>
+          <option value="ryan">Ryan - Compositions Palette (2024)</option>
+          <option value="ten">Kaufman - Ten (2022)</option>
+        </optgroup>
+        <option value="custom">Custom</option>
+      </select>
+    </div>
+    
+    <div class="control-group" id="customCubeEditor" style="display: none;">
+      <label>Custom Color Cube</label>
+      <div class="custom-cube-container">
+        <div class="cube-diagram">
+          <svg width="120" height="100" viewBox="0 0 120 100">
+            <g stroke="#333" stroke-width="1" fill="none">
+              <!-- Back face -->
+              <rect x="30" y="10" width="50" height="50" stroke-dasharray="2,2"/>
+              <!-- Front face -->
+              <rect x="10" y="30" width="50" height="50"/>
+              <!-- Connecting lines -->
+              <line x1="10" y1="30" x2="30" y2="10"/>
+              <line x1="60" y1="30" x2="80" y2="10"/>
+              <line x1="10" y1="80" x2="30" y2="60"/>
+              <line x1="60" y1="80" x2="80" y2="60"/>
+            </g>
+            <!-- Corner labels -->
+            <text x="5" y="25" font-size="10" fill="#666">W</text>
+            <text x="65" y="25" font-size="10" fill="#666">R</text>
+            <text x="5" y="90" font-size="10" fill="#666">B</text>
+            <text x="65" y="90" font-size="10" fill="#666">Y</text>
+            <text x="25" y="5" font-size="10" fill="#666">K</text>
+            <text x="85" y="5" font-size="10" fill="#666">O</text>
+            <text x="25" y="70" font-size="10" fill="#666">V</text>
+            <text x="85" y="70" font-size="10" fill="#666">G</text>
+          </svg>
+        </div>
+        <div class="cube-colors">
+          <div class="color-row">
+            <div class="color-input-group">
+              <label>White</label>
+              <input type="color" id="cubeWhite" value="#ffffff">
+            </div>
+            <div class="color-input-group">
+              <label>Red</label>
+              <input type="color" id="cubeRed" value="#da6968">
+            </div>
+            <div class="color-input-group">
+              <label>Yellow</label>
+              <input type="color" id="cubeYellow" value="#fff47a">
+            </div>
+            <div class="color-input-group">
+              <label>Blue</label>
+              <input type="color" id="cubeBlue" value="#498aba">
+            </div>
+          </div>
+          <div class="color-row">
+            <div class="color-input-group">
+              <label>Black</label>
+              <input type="color" id="cubeBlack" value="#080808">
+            </div>
+            <div class="color-input-group">
+              <label>Orange</label>
+              <input type="color" id="cubeOrange" value="#e89a71">
+            </div>
+            <div class="color-input-group">
+              <label>Green</label>
+              <input type="color" id="cubeGreen" value="#90bf8c">
+            </div>
+            <div class="color-input-group">
+              <label>Violet</label>
+              <input type="color" id="cubeViolet" value="#6160b2">
+            </div>
+          </div>
+        </div>
+        <div class="cube-preview">
+          <label>Preview</label>
+          <div class="preview-grid">
+            <!-- Will be populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+    <div class="button-group">
+      <button id="generate">Generate Palette</button>
+      <button id="cancel">Cancel</button>
+    </div>
+  </div>
+  
+  <div class="preview-container">
+    <div class="preview" id="preview"></div>
+  </div>
+  
+  <script>
+    console.log('[UI] Script starting...');
+    console.log('[UI] window.rybittenConvert available:', !!window.rybittenConvert);
+    
+    // Update range value displays and handle input changes
+    document.querySelectorAll('input[type="range"]').forEach(input => {
+      const valueInput = document.getElementById(input.id + 'Value');
+      
+      // Update input when slider changes
+      input.addEventListener('input', () => {
+        valueInput.value = input.value;
+        updatePreview();
+      });
+      
+      // Update slider when input changes
+      valueInput.addEventListener('input', () => {
+        const val = parseFloat(valueInput.value);
+        if (!isNaN(val)) {
+          input.value = val.toString();
+          updatePreview();
+        }
+      });
+    });
+    
+    // Handle easing mode change
+    document.getElementById('easingMode').addEventListener('change', (e) => {
+      const individualControls = document.getElementById('individualAxisControls');
+      const curveControls = document.getElementById('slCurveControls');
+      
+      if (e.target.value === 'individualAxis') {
+        individualControls.classList.add('active');
+        curveControls.classList.remove('active');
+      } else {
+        individualControls.classList.remove('active');
+        curveControls.classList.add('active');
+      }
+      updatePreview();
+    });
+    
+    // Update preview on any change
+    document.querySelectorAll('select').forEach(select => {
+      select.addEventListener('change', updatePreview);
+    });
+    
+    // Handle color mode change to show/hide RYBitten gamut
+    document.getElementById('colorMode').addEventListener('change', (e) => {
+      const rybGamutGroup = document.getElementById('rybGamutGroup');
+      const customCubeEditor = document.getElementById('customCubeEditor');
+      if (e.target.value === 'rybitten') {
+        rybGamutGroup.style.display = 'block';
+        // Check if custom gamut is selected
+        if (document.getElementById('rybGamut').value === 'custom') {
+          customCubeEditor.style.display = 'block';
+        }
+      } else {
+        rybGamutGroup.style.display = 'none';
+        customCubeEditor.style.display = 'none';
+      }
+    });
+    
+    // Handle RYBitten gamut change to show/hide custom cube editor
+    let previousGamut = document.getElementById('rybGamut').value;
+    document.getElementById('rybGamut').addEventListener('change', (e) => {
+      const customCubeEditor = document.getElementById('customCubeEditor');
+      if (e.target.value === 'custom') {
+        customCubeEditor.style.display = 'block';
+        
+        // Copy colors from the previous gamut if it wasn't custom
+        if (previousGamut !== 'custom' && window.rybittenConvert) {
+          const gamutCube = window.rybittenConvert.getGamutCube(previousGamut);
+          if (gamutCube) {
+            const rgbToHex = (rgb) => {
+              const r = Math.round(rgb[0] * 255).toString(16).padStart(2, '0');
+              const g = Math.round(rgb[1] * 255).toString(16).padStart(2, '0');
+              const b = Math.round(rgb[2] * 255).toString(16).padStart(2, '0');
+              return \`#\${r}\${g}\${b}\`;
+            };
+            
+            document.getElementById('cubeWhite').value = rgbToHex(gamutCube[0]);
+            document.getElementById('cubeRed').value = rgbToHex(gamutCube[1]);
+            document.getElementById('cubeYellow').value = rgbToHex(gamutCube[2]);
+            document.getElementById('cubeOrange').value = rgbToHex(gamutCube[3]);
+            document.getElementById('cubeBlue').value = rgbToHex(gamutCube[4]);
+            document.getElementById('cubeViolet').value = rgbToHex(gamutCube[5]);
+            document.getElementById('cubeGreen').value = rgbToHex(gamutCube[6]);
+            document.getElementById('cubeBlack').value = rgbToHex(gamutCube[7]);
+          }
+        }
+        
+        updateCubePreview();
+      } else {
+        customCubeEditor.style.display = 'none';
+      }
+      previousGamut = e.target.value;
+      updatePreview();
+    });
+    
+    // Handle custom cube color changes
+    const cubeColorInputs = ['cubeWhite', 'cubeRed', 'cubeYellow', 'cubeBlue', 'cubeBlack', 'cubeOrange', 'cubeGreen', 'cubeViolet'];
+    cubeColorInputs.forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        updateCubePreview();
+        updatePreview();
+      });
+    });
+    
+    // Function to get custom cube colors
+    function getCustomCube() {
+      const hexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})\$/i.exec(hex);
+        return result ? [
+          parseInt(result[1], 16) / 255,
+          parseInt(result[2], 16) / 255,
+          parseInt(result[3], 16) / 255
+        ] : [0, 0, 0];
+      };
+      
+      return [
+        hexToRgb(document.getElementById('cubeWhite').value),
+        hexToRgb(document.getElementById('cubeRed').value),
+        hexToRgb(document.getElementById('cubeYellow').value),
+        hexToRgb(document.getElementById('cubeOrange').value),
+        hexToRgb(document.getElementById('cubeBlue').value),
+        hexToRgb(document.getElementById('cubeViolet').value),
+        hexToRgb(document.getElementById('cubeGreen').value),
+        hexToRgb(document.getElementById('cubeBlack').value)
+      ];
+    }
+    
+    // Function to update cube preview
+    function updateCubePreview() {
+      const previewGrid = document.querySelector('.preview-grid');
+      previewGrid.innerHTML = '';
+      
+      const cube = getCustomCube();
+      const samples = [];
+      
+      // Generate sample RYB coordinates
+      for (let r = 0; r <= 1; r += 0.25) {
+        for (let y = 0; y <= 1; y += 0.25) {
+          for (let b = 0; b <= 1; b += 0.5) {
+            samples.push({ r, y, b });
+          }
+        }
+      }
+      
+      // Sort samples for better visual arrangement
+      samples.sort((a, b) => {
+        const sumA = a.r + a.y + a.b;
+        const sumB = b.r + b.y + b.b;
+        return sumA - sumB;
+      });
+      
+      // Display first 32 samples
+      samples.slice(0, 32).forEach(sample => {
+        const rgb = rybToRgbCustom(sample.r, sample.y, sample.b, cube);
+        const cell = document.createElement('div');
+        cell.className = 'preview-cell';
+        cell.style.backgroundColor = \`rgb(\${Math.round(rgb[0] * 255)}, \${Math.round(rgb[1] * 255)}, \${Math.round(rgb[2] * 255)})\`;
+        cell.title = \`RYB(\${sample.r.toFixed(2)}, \${sample.y.toFixed(2)}, \${sample.b.toFixed(2)})\`;
+        previewGrid.appendChild(cell);
+      });
+    }
+    
+    // Custom RYB to RGB conversion using trilinear interpolation
+    function rybToRgbCustom(r, y, b, cube) {
+      // Ensure inputs are in [0,1] range
+      r = Math.max(0, Math.min(1, r));
+      y = Math.max(0, Math.min(1, y));
+      b = Math.max(0, Math.min(1, b));
+      
+      // Trilinear interpolation
+      const c000 = cube[0]; // white
+      const c100 = cube[1]; // red
+      const c010 = cube[2]; // yellow
+      const c110 = cube[3]; // orange
+      const c001 = cube[4]; // blue
+      const c101 = cube[5]; // violet
+      const c011 = cube[6]; // green
+      const c111 = cube[7]; // black
+      
+      const c00 = c000.map((v, i) => v * (1 - r) + c100[i] * r);
+      const c01 = c001.map((v, i) => v * (1 - r) + c101[i] * r);
+      const c10 = c010.map((v, i) => v * (1 - r) + c110[i] * r);
+      const c11 = c011.map((v, i) => v * (1 - r) + c111[i] * r);
+      
+      const c0 = c00.map((v, i) => v * (1 - y) + c10[i] * y);
+      const c1 = c01.map((v, i) => v * (1 - y) + c11[i] * y);
+      
+      return c0.map((v, i) => v * (1 - b) + c1[i] * b);
+    }
+    
+    function getConfig() {
+      const config = {
+        total: parseInt(document.getElementById('total').value),
+        hStart: parseFloat(document.getElementById('hStart').value),
+        hCycles: parseFloat(document.getElementById('hCycles').value),
+        hStartCenter: parseFloat(document.getElementById('hStartCenter').value),
+        minLight: parseFloat(document.getElementById('minLight').value),
+        maxLight: parseFloat(document.getElementById('maxLight').value),
+        minSaturation: parseFloat(document.getElementById('minSaturation').value),
+        maxSaturation: parseFloat(document.getElementById('maxSaturation').value),
+        easingMode: document.getElementById('easingMode').value,
+        easingH: document.getElementById('easingH').value,
+        easingS: document.getElementById('easingS').value,
+        easingL: document.getElementById('easingL').value,
+        easingCurve: document.getElementById('easingCurve').value,
+        transformFn: document.getElementById('transformFn').value,
+        colorMode: document.getElementById('colorMode').value,
+        rybGamut: document.getElementById('rybGamut').value
+      };
+      
+      // Include custom cube data if custom gamut is selected
+      if (config.rybGamut === 'custom') {
+        config.customCube = getCustomCube();
+      }
+      
+      return config;
+    }
+    
+    function updatePreview() {
+      const config = getConfig();
+      const preview = document.getElementById('preview');
+      preview.innerHTML = '';
+      
+      const colors = generateColorPalette(config);
+      colors.forEach(color => {
+        const div = document.createElement('div');
+        div.className = 'preview-color';
+        div.style.backgroundColor = \`rgb(\${color.r}, \${color.g}, \${color.b})\`;
+        preview.appendChild(div);
+      });
+    }
+    
+    // OKLCH conversion functions
+    function oklchToRgb(l, c, h) {
+      // Clamp inputs to valid ranges
+      l = Math.max(0, Math.min(1, l));
+      c = Math.max(0, c);
+      h = h % 360;
+      if (h < 0) h += 360;
+      
+      // Convert OKLCH to OKLab
+      const hRad = h * Math.PI / 180;
+      const a = c * Math.cos(hRad);
+      const b = c * Math.sin(hRad);
+      
+      // OKLab to linear RGB
+      const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
+      const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
+      const s_ = l - 0.0894841775 * a - 1.2914855480 * b;
+      
+      const l3 = l_ * l_ * l_;
+      const m3 = m_ * m_ * m_;
+      const s3 = s_ * s_ * s_;
+      
+      const r = 4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3;
+      const g = -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3;
+      const b_ = -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3;
+      
+      // Apply gamma correction and clamp
+      const gammaCorrect = (channel) => {
+        channel = Math.max(0, channel); // Clamp negative values
+        if (channel <= 0.0031308) {
+          return 12.92 * channel;
+        }
+        return 1.055 * Math.pow(channel, 1 / 2.4) - 0.055;
+      };
+      
+      return {
+        r: Math.round(Math.max(0, Math.min(255, gammaCorrect(r) * 255))),
+        g: Math.round(Math.max(0, Math.min(255, gammaCorrect(g) * 255))),
+        b: Math.round(Math.max(0, Math.min(255, gammaCorrect(b_) * 255)))
+      };
+    }
+    
+    // RYBitten conversion functions
+    function hslToRyb(h, s, l) {
+      // First convert HSL to RGB
+      const rgb = hslToRgb(h, s, l);
+      
+      // Then RGB to RYB using simplified conversion
+      const r = rgb.r / 255;
+      const g = rgb.g / 255;
+      const b = rgb.b / 255;
+      
+      // Remove white
+      const w = Math.min(r, g, b);
+      const r1 = r - w;
+      const g1 = g - w;
+      const b1 = b - w;
+      
+      const mg = Math.max(r1, g1, b1);
+      
+      // Get yellow
+      let y = Math.min(r1, g1);
+      let ry = r1 - y;
+      let gy = g1 - y;
+      
+      // Get blue
+      let by = b1;
+      
+      // Normalize
+      if (by > 0 && gy > 0) {
+        by /= 2;
+        gy /= 2;
+      }
+      
+      // Redistribute
+      ry += gy;
+      by += gy;
+      
+      // Normalize to max
+      const max = Math.max(ry, y, by);
+      if (max > 0) {
+        const n = mg / max;
+        ry *= n;
+        y *= n;
+        by *= n;
+      }
+      
+      // Add white back
+      ry += w;
+      y += w;
+      by += w;
+      
+      return { r: ry, y: y, b: by };
+    }
+    
+    function rybToRgb(rVal, yVal, bVal, gamut = 'itten') {
+      // Check if we have the real RYBitten library available
+      if (window.rybittenConvert) {
+        // Use the real RYBitten conversion
+        const rgb = window.rybittenConvert.ryb2rgb([rVal, yVal, bVal], gamut);
+        return {
+          r: Math.round(Math.max(0, Math.min(255, rgb[0] * 255))),
+          g: Math.round(Math.max(0, Math.min(255, rgb[1] * 255))),
+          b: Math.round(Math.max(0, Math.min(255, rgb[2] * 255)))
+        };
+      } else {
+        // Fallback to simple conversion if RYBitten not loaded yet
+        // This is just a basic RYB to RGB conversion
+        const white = Math.min(rVal, yVal, bVal);
+        let redComp = rVal - white;
+        let yellowComp = yVal - white;
+        let blueComp = bVal - white;
+        
+        const greenComp = Math.min(yellowComp, blueComp);
+        yellowComp -= greenComp;
+        blueComp -= greenComp;
+        
+        const orangeComp = Math.min(redComp, yellowComp) * 0.5;
+        redComp -= orangeComp;
+        yellowComp -= orangeComp;
+        
+        const purpleComp = Math.min(redComp, blueComp) * 0.5;
+        redComp -= purpleComp;
+        blueComp -= purpleComp;
+        
+        return {
+          r: Math.round(Math.max(0, Math.min(255, (redComp + orangeComp + purpleComp + white) * 255))),
+          g: Math.round(Math.max(0, Math.min(255, (greenComp + orangeComp * 0.5 + white) * 255))),
+          b: Math.round(Math.max(0, Math.min(255, (blueComp + purpleComp + white) * 255)))
+        };
+      }
+    }
+    
+    function generateColorPalette(config) {
+      const colors = [];
+      
+      for (let i = 0; i < config.total; i++) {
+        const t = i / (config.total - 1);
+        
+        let hue, saturation, lightness;
+        
+        if (config.easingMode === 'individualAxis') {
+          const easedT_h = applyEasing(t, config.easingH);
+          const easedT_s = applyEasing(t, config.easingS);
+          const easedT_l = applyEasing(t, config.easingL);
+          
+          const hueRange = config.hCycles * 360;
+          const hueOffset = config.hStart + (easedT_h - config.hStartCenter) * hueRange;
+          hue = (hueOffset + 360) % 360;
+          
+          saturation = config.minSaturation + easedT_s * (config.maxSaturation - config.minSaturation);
+          lightness = config.minLight + easedT_l * (config.maxLight - config.minLight);
+        } else {
+          const easedT = applyEasing(t, config.easingCurve);
+          
+          const hueRange = config.hCycles * 360;
+          const hueOffset = config.hStart + (easedT - config.hStartCenter) * hueRange;
+          hue = (hueOffset + 360) % 360;
+          
+          saturation = config.minSaturation + easedT * (config.maxSaturation - config.minSaturation);
+          lightness = config.minLight + easedT * (config.maxLight - config.minLight);
+        }
+        
+        let rgb;
+        if (config.colorMode === 'oklch') {
+          // For OKLCH: L should be 0-1, C should be 0-0.4, H should be 0-360
+          rgb = oklchToRgb(lightness / 100, saturation / 100 * 0.4, hue);
+        } else if (config.colorMode === 'rybitten') {
+          // For RYBitten, we'll need to handle this differently since we can't use npm modules in the UI
+          // We'll keep the simplified version for preview and rely on the main code for actual generation
+          const ryb = hslToRyb(hue / 360, saturation / 100, lightness / 100);
+          if (config.rybGamut === 'custom' && config.customCube) {
+            // Debug logging
+            if (i === 0) {
+              console.log('[UI] Custom cube preview - first color:', { ryb, customCube: config.customCube });
+            }
+            rgb = rybToRgbCustom(ryb.r, ryb.y, ryb.b, config.customCube);
+            rgb = {
+              r: Math.round(rgb[0] * 255),
+              g: Math.round(rgb[1] * 255),
+              b: Math.round(rgb[2] * 255)
+            };
+          } else {
+            rgb = rybToRgb(ryb.r, ryb.y, ryb.b, config.rybGamut || 'itten');
+          }
+        } else {
+          rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
+        }
+        
+        const transformedRgb = applyTransform(rgb, config.transformFn, hue);
+        colors.push(transformedRgb);
+      }
+      
+      return colors;
+    }
+    
+    function applyEasing(t, easingType) {
+      switch (easingType) {
+        case 'linear': return t;
+        case 'easeInSine': return 1 - Math.cos((t * Math.PI) / 2);
+        case 'easeOutSine': return Math.sin((t * Math.PI) / 2);
+        case 'easeInOutSine': return -(Math.cos(Math.PI * t) - 1) / 2;
+        case 'easeInQuad': return t * t;
+        case 'easeOutQuad': return 1 - (1 - t) * (1 - t);
+        case 'easeInOutQuad': return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        case 'easeInCubic': return t * t * t;
+        case 'easeOutCubic': return 1 - Math.pow(1 - t, 3);
+        case 'easeInOutCubic': return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        case 'easeInQuart': return t * t * t * t;
+        case 'easeOutQuart': return 1 - Math.pow(1 - t, 4);
+        case 'easeInOutQuart': return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+        case 'easeInQuint': return t * t * t * t * t;
+        case 'easeOutQuint': return 1 - Math.pow(1 - t, 5);
+        case 'easeInOutQuint': return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
+        case 'easeInExpo': return t === 0 ? 0 : Math.pow(2, 10 * t - 10);
+        case 'easeOutExpo': return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+        case 'easeInOutExpo': return t === 0 ? 0 : t === 1 ? 1 : t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2;
+        case 'easeInCirc': return 1 - Math.sqrt(1 - Math.pow(t, 2));
+        case 'easeOutCirc': return Math.sqrt(1 - Math.pow(t - 1, 2));
+        case 'easeInOutCirc': return t < 0.5 ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) / 2 : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2;
+        default: return t;
+      }
+    }
+    
+    function hslToRgb(h, s, l) {
+      let r, g, b;
+      
+      if (s === 0) {
+        r = g = b = l;
+      } else {
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+      
+      return {
+        r: Math.round(r * 255),
+        g: Math.round(g * 255),
+        b: Math.round(b * 255)
+      };
+    }
+    
+    function harveyHue(h) {
+      // Use harvey hue from rampensau if available, otherwise fall back to custom implementation
+      if (window.rampensauUtils && window.rampensauUtils.harveyHue) {
+        return window.rampensauUtils.harveyHue(h);
+      }
+      
+      // Fallback implementation
+      const hNorm = h % 1;
+      let hTransformed;
+      
+      if (hNorm < 0.0833) {
+        hTransformed = hNorm * 0.5 / 0.0833;
+      } else if (hNorm < 0.1667) {
+        hTransformed = 0.5 + (hNorm - 0.0833) * 0.5 / 0.0833;
+      } else if (hNorm < 0.5) {
+        hTransformed = 1 + (hNorm - 0.1667) * 2 / 0.3333;
+      } else if (hNorm < 0.8333) {
+        hTransformed = 3 + (hNorm - 0.5) * 2 / 0.3333;
+      } else {
+        hTransformed = 5 + (hNorm - 0.8333) * 1 / 0.1667;
+      }
+      
+      return (hTransformed / 6) % 1;
+    }
+    
+    function applyTransform(rgb, transformFn, originalHue) {
+      switch (transformFn) {
+        case 'harveyHue':
+          // Convert back to HSL, apply Harvey Hue, then back to RGB
+          const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+          const transformedHue = harveyHue(originalHue / 360);
+          return hslToRgb(transformedHue, hsl.s, hsl.l);
+        case 'muted':
+          return {
+            r: Math.round(rgb.r * 0.8),
+            g: Math.round(rgb.g * 0.8),
+            b: Math.round(rgb.b * 0.8)
+          };
+        case 'pastel':
+          return {
+            r: Math.round(rgb.r * 0.7 + 255 * 0.3),
+            g: Math.round(rgb.g * 0.7 + 255 * 0.3),
+            b: Math.round(rgb.b * 0.7 + 255 * 0.3)
+          };
+        case 'none':
+        default:
+          return rgb;
+      }
+    }
+    
+    function rgbToHsl(r, g, b) {
+      r /= 255;
+      g /= 255;
+      b /= 255;
+      
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
+      
+      if (max === min) {
+        h = s = 0;
+      } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        
+        switch (max) {
+          case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+          case g: h = ((b - r) / d + 2) / 6; break;
+          case b: h = ((r - g) / d + 4) / 6; break;
+        }
+      }
+      
+      return { h, s, l };
+    }
+    
+    // Initial preview - delay to ensure bundle loads first
+    setTimeout(() => {
+      console.log('[UI] Delayed check - window.rybittenConvert available:', !!window.rybittenConvert);
+      try {
+        // Check if custom gamut is selected on load
+        if (document.getElementById('colorMode').value === 'rybitten' && 
+            document.getElementById('rybGamut').value === 'custom') {
+          document.getElementById('customCubeEditor').style.display = 'block';
+          updateCubePreview();
+        }
+        updatePreview();
+      } catch (error) {
+        console.error('[UI] Error in initial updatePreview:', error);
+      }
+    }, 100);
+    
+    // Button handlers
+    const generateButton = document.getElementById('generate');
+    console.log('[UI] Generate button element:', generateButton);
+    
+    if (generateButton) {
+      generateButton.onclick = () => {
+        console.log('[UI] Generate button clicked');
+        try {
+          const config = getConfig();
+          console.log('[UI] Config:', config);
+          console.log('[UI] Sending message to plugin');
+          parent.postMessage({ pluginMessage: { type: 'generate-palette', config } }, '*');
+          console.log('[UI] Message sent successfully');
+        } catch (error) {
+          console.error('[UI] Error in generate button handler:', error);
+        }
+      };
+    } else {
+      console.error('[UI] Generate button not found!');
+    }
+    
+    document.getElementById('cancel').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*');
+    };
+    
+    // Listen for messages from the plugin
+    window.onmessage = (event) => {
+      console.log('[UI] Received message:', event.data);
+      if (event.data.pluginMessage) {
+        if (event.data.pluginMessage.type === 'palette-generated') {
+          console.log('[UI] Palette generated successfully');
+          // Could show a success message or update UI
+        } else if (event.data.pluginMessage.type === 'load-config') {
+          // Load configuration into UI
+          const config = event.data.pluginMessage.config;
+          
+          // Set values
+          document.getElementById('total').value = config.total;
+          document.getElementById('totalValue').value = config.total;
+          
+          document.getElementById('hStart').value = config.hStart;
+          document.getElementById('hStartValue').value = config.hStart;
+          
+          document.getElementById('hCycles').value = config.hCycles;
+          document.getElementById('hCyclesValue').value = config.hCycles;
+          
+          document.getElementById('hStartCenter').value = config.hStartCenter;
+          document.getElementById('hStartCenterValue').value = config.hStartCenter;
+          
+          document.getElementById('minLight').value = config.minLight;
+          document.getElementById('minLightValue').value = config.minLight;
+          
+          document.getElementById('maxLight').value = config.maxLight;
+          document.getElementById('maxLightValue').value = config.maxLight;
+          
+          document.getElementById('minSaturation').value = config.minSaturation;
+          document.getElementById('minSaturationValue').value = config.minSaturation;
+          
+          document.getElementById('maxSaturation').value = config.maxSaturation;
+          document.getElementById('maxSaturationValue').value = config.maxSaturation;
+          
+          // Set selects
+          document.getElementById('easingMode').value = config.easingMode;
+          document.getElementById('easingH').value = config.easingH;
+          document.getElementById('easingS').value = config.easingS;
+          document.getElementById('easingL').value = config.easingL;
+          document.getElementById('easingCurve').value = config.easingCurve;
+          document.getElementById('transformFn').value = config.transformFn;
+          document.getElementById('colorMode').value = config.colorMode;
+          if (config.rybGamut) {
+            document.getElementById('rybGamut').value = config.rybGamut;
+          }
+          
+          // Load custom cube colors if present
+          if (config.rybGamut === 'custom' && config.customCube) {
+            const rgbToHex = (rgb) => {
+              const r = Math.round(rgb[0] * 255).toString(16).padStart(2, '0');
+              const g = Math.round(rgb[1] * 255).toString(16).padStart(2, '0');
+              const b = Math.round(rgb[2] * 255).toString(16).padStart(2, '0');
+              return \`#\${r}\${g}\${b}\`;
+            };
+            
+            document.getElementById('cubeWhite').value = rgbToHex(config.customCube[0]);
+            document.getElementById('cubeRed').value = rgbToHex(config.customCube[1]);
+            document.getElementById('cubeYellow').value = rgbToHex(config.customCube[2]);
+            document.getElementById('cubeOrange').value = rgbToHex(config.customCube[3]);
+            document.getElementById('cubeBlue').value = rgbToHex(config.customCube[4]);
+            document.getElementById('cubeViolet').value = rgbToHex(config.customCube[5]);
+            document.getElementById('cubeGreen').value = rgbToHex(config.customCube[6]);
+            document.getElementById('cubeBlack').value = rgbToHex(config.customCube[7]);
+          }
+          
+          // Trigger easing mode change to show/hide correct controls
+          const changeEvent = new Event('change');
+          document.getElementById('easingMode').dispatchEvent(changeEvent);
+          
+          // Also trigger color mode change to show/hide RYB gamut
+          const colorModeEvent = new Event('change');
+          document.getElementById('colorMode').dispatchEvent(colorModeEvent);
+          
+          // Also trigger RYB gamut change to show custom cube editor if needed
+          const gamutEvent = new Event('change');
+          document.getElementById('rybGamut').dispatchEvent(gamutEvent);
+          
+          // Update preview
+          updatePreview();
+        }
+      }
+    };
+  </script>
+<!-- RYBITTEN_BUNDLE -->
+<script>
+"use strict";
+(() => {
+  // node_modules/rybitten/dist/cubes.mjs
+  var r = [
+    // white
+    [0.9921568627450981, 0.9647058823529412, 0.9294117647058824],
+    // red
+    [0.8901960784313725, 0.1411764705882353, 0.12941176470588237],
+    // yellow
+    [0.9529411764705882, 0.9019607843137255, 0],
+    // orange
+    [0.9411764705882353, 0.5568627450980392, 0.10980392156862745],
+    // blue
+    [0.08627450980392157, 0.6, 0.8549019607843137],
+    // pink / but often violet in old color wheels
+    [0.47058823529411764, 0.13333333333333333, 0.6666666666666666],
+    // green
+    [0, 0.5568627450980392, 0.3568627450980392],
+    // black
+    [0.11372549019607843, 0.10980392156862745, 0.10980392156862745]
+  ];
+  var t = [
+    [253 / 255, 246 / 255, 237 / 255],
+    [247 / 255, 45 / 255, 41 / 255],
+    [253 / 255, 203 / 255, 0 / 255],
+    [250 / 255, 102 / 255, 13 / 255],
+    [17 / 255, 97 / 255, 170 / 255],
+    [101 / 255, 57 / 255, 138 / 255],
+    [70 / 255, 139 / 255, 73 / 255],
+    [29 / 255, 28 / 255, 28 / 255]
+  ];
+  var o = [
+    [1, 1, 1],
+    [1, 0, 0],
+    [1, 1, 0],
+    [1, 0.5, 0],
+    [0.163, 0.373, 0.6],
+    [0.5, 0, 0.5],
+    [0, 0.66, 0.2],
+    [0.2, 0.094, 0]
+  ];
+  var a = [
+    [245 / 255, 238 / 255, 226 / 255],
+    [170 / 255, 14 / 255, 1 / 255],
+    [224 / 255, 178 / 255, 0 / 255],
+    [217 / 255, 104 / 255, 5 / 255],
+    [18 / 255, 107 / 255, 145 / 255],
+    [103 / 255, 15 / 255, 128 / 255],
+    [88 / 255, 133 / 255, 30 / 255],
+    [44 / 255, 37 / 255, 30 / 255]
+  ];
+  var n = [
+    [254 / 255, 250 / 255, 226 / 255],
+    [237 / 255, 55 / 255, 58 / 255],
+    [255 / 255, 233 / 255, 111 / 255],
+    [250 / 255, 102 / 255, 13 / 255],
+    [33 / 255, 112 / 255, 163 / 255],
+    [238 / 255, 131 / 255, 154 / 255],
+    [59 / 255, 155 / 255, 83 / 255],
+    [24 / 255, 10 / 255, 1 / 255]
+  ];
+  var s = [
+    [255 / 255, 255 / 255, 255 / 255],
+    [218 / 255, 105 / 255, 104 / 255],
+    [255 / 255, 244 / 255, 122 / 255],
+    [232 / 255, 154 / 255, 113 / 255],
+    [73 / 255, 138 / 255, 186 / 255],
+    [97 / 255, 96 / 255, 178 / 255],
+    [144 / 255, 191 / 255, 140 / 255],
+    [8 / 255, 8 / 255, 8 / 255]
+  ];
+  var c = [
+    [240 / 255, 234 / 255, 214 / 255],
+    [204 / 255, 50 / 255, 53 / 255],
+    [253 / 255, 222 / 255, 20 / 255],
+    [230 / 255, 152 / 255, 92 / 255],
+    [1 / 255, 88 / 255, 140 / 255],
+    [107 / 255, 51 / 255, 111 / 255],
+    [51 / 255, 138 / 255, 92 / 255],
+    [55 / 255, 39 / 255, 23 / 255]
+  ];
+  var l = [
+    [249 / 255, 232 / 255, 209 / 255],
+    [216 / 255, 43 / 255, 59 / 255],
+    [231 / 255, 175 / 255, 2 / 255],
+    [224 / 255, 89 / 255, 31 / 255],
+    [92 / 255, 123 / 255, 145 / 255],
+    [77 / 255, 58 / 255, 78 / 255],
+    [107 / 255, 129 / 255, 53 / 255],
+    [14 / 255, 8 / 255, 7 / 255]
+  ];
+  var u = [
+    // white
+    [241 / 255, 236 / 255, 213 / 255],
+    // red
+    [235 / 255, 66 / 255, 35 / 255],
+    // yellow
+    [253 / 255, 236 / 255, 1 / 255],
+    // orange
+    [254 / 255, 130 / 255, 39 / 255],
+    // blue
+    [3 / 255, 7 / 255, 171 / 255],
+    // pink / but often violet in old color wheels
+    [74 / 255, 50 / 255, 86 / 255],
+    // green
+    [55 / 255, 131 / 255, 74 / 255],
+    // black
+    [2 / 255, 1 / 255, 0 / 255]
+  ];
+  var i = [
+    [238 / 255, 232 / 255, 206 / 255],
+    [222 / 255, 62 / 255, 29 / 255],
+    [247 / 255, 225 / 255, 7 / 255],
+    [254 / 255, 130 / 255, 39 / 255],
+    [4 / 255, 6 / 255, 139 / 255],
+    [74 / 255, 50 / 255, 86 / 255],
+    [56 / 255, 131 / 255, 75 / 255],
+    [2 / 255, 1 / 255, 0 / 255]
+  ];
+  var h = [
+    [239 / 255, 235 / 255, 225 / 255],
+    [182 / 255, 53 / 255, 55 / 255],
+    [253 / 255, 203 / 255, 0 / 255],
+    [222 / 255, 69 / 255, 20 / 255],
+    [95 / 255, 157 / 255, 191 / 255],
+    [83 / 255, 70 / 255, 98 / 255],
+    [58 / 255, 90 / 255, 66 / 255],
+    [8 / 255, 9 / 255, 13 / 255]
+  ];
+  var _ = [
+    [228 / 255, 218 / 255, 197 / 255],
+    [181 / 255, 65 / 255, 60 / 255],
+    [229 / 255, 193 / 255, 81 / 255],
+    [220 / 255, 137 / 255, 61 / 255],
+    [59 / 255, 143 / 255, 171 / 255],
+    [121 / 255, 97 / 255, 134 / 255],
+    [13 / 255, 170 / 255, 114 / 255],
+    [46 / 255, 44 / 255, 38 / 255]
+  ];
+  var p = [
+    [206 / 255, 205 / 255, 209 / 255],
+    [181 / 255, 38 / 255, 54 / 255],
+    [221 / 255, 187 / 255, 23 / 255],
+    [208 / 255, 120 / 255, 37 / 255],
+    [10 / 255, 71 / 255, 129 / 255],
+    [101 / 255, 36 / 255, 66 / 255],
+    [75 / 255, 129 / 255, 131 / 255],
+    [26 / 255, 30 / 255, 47 / 255]
+  ];
+  var f = [
+    [237 / 255, 213 / 255, 177 / 255],
+    [167 / 255, 33 / 255, 28 / 255],
+    [245 / 255, 181 / 255, 18 / 255],
+    [204 / 255, 93 / 255, 46 / 255],
+    [71 / 255, 122 / 255, 141 / 255],
+    [99 / 255, 79 / 255, 93 / 255],
+    [109 / 255, 143 / 255, 118 / 255],
+    [44 / 255, 44 / 255, 37 / 255]
+  ];
+  var y = [
+    [240 / 255, 236 / 255, 235 / 255],
+    [247 / 255, 65 / 255, 51 / 255],
+    [243 / 255, 187 / 255, 6 / 255],
+    [251 / 255, 130 / 255, 2 / 255],
+    [37 / 255, 71 / 255, 169 / 255],
+    [176 / 255, 121 / 255, 177 / 255],
+    [2 / 255, 117 / 255, 111 / 255],
+    [41 / 255, 42 / 255, 45 / 255]
+  ];
+  var b = [
+    [231 / 255, 235 / 255, 237 / 255],
+    [229 / 255, 30 / 255, 38 / 255],
+    [255 / 255, 198 / 255, 12 / 255],
+    [245 / 255, 119 / 255, 34 / 255],
+    [17 / 255, 97 / 255, 170 / 255],
+    [139 / 255, 47 / 255, 146 / 255],
+    [1 / 255, 167 / 255, 98 / 255],
+    [0 / 255, 0 / 255, 1 / 255]
+  ];
+  var R = [
+    [236 / 255, 237 / 255, 241 / 255],
+    [200 / 255, 75 / 255, 49 / 255],
+    [235 / 255, 207 / 255, 13 / 255],
+    [228 / 255, 168 / 255, 21 / 255],
+    [39 / 255, 108 / 255, 176 / 255],
+    [188 / 255, 57 / 255, 104 / 255],
+    [122 / 255, 176 / 255, 62 / 255],
+    [4 / 255, 4 / 255, 4 / 255]
+  ];
+  var C = [
+    [241 / 255, 236 / 255, 230 / 255],
+    [185 / 255, 34 / 255, 17 / 255],
+    [231 / 255, 200 / 255, 52 / 255],
+    [232 / 255, 90 / 255, 26 / 255],
+    [26 / 255, 70 / 255, 79 / 255],
+    [82 / 255, 15 / 255, 47 / 255],
+    [67 / 255, 111 / 255, 33 / 255],
+    [29 / 255, 28 / 255, 28 / 255]
+  ];
+  var m = [
+    [215 / 255, 208 / 255, 180 / 255],
+    [202 / 255, 0 / 255, 17 / 255],
+    [220 / 255, 170 / 255, 0 / 255],
+    [229 / 255, 76 / 255, 32 / 255],
+    [0 / 255, 126 / 255, 157 / 255],
+    [137 / 255, 37 / 255, 79 / 255],
+    [0 / 255, 110 / 255, 60 / 255],
+    [31 / 255, 27 / 255, 28 / 255]
+  ];
+  var B = [
+    [236 / 255, 231 / 255, 213 / 255],
+    [188 / 255, 32 / 255, 43 / 255],
+    [233 / 255, 201 / 255, 0 / 255],
+    [197 / 255, 72 / 255, 30 / 255],
+    [50 / 255, 42 / 255, 115 / 255],
+    [116 / 255, 48 / 255, 101 / 255],
+    [69 / 255, 118 / 255, 61 / 255],
+    [56 / 255, 44 / 255, 42 / 255]
+  ];
+  var g = [
+    [209 / 255, 194 / 255, 173 / 255],
+    [159 / 255, 36 / 255, 31 / 255],
+    [231 / 255, 191 / 255, 6 / 255],
+    [231 / 255, 155 / 255, 7 / 255],
+    [75 / 255, 90 / 255, 200 / 255],
+    [121 / 255, 100 / 255, 188 / 255],
+    [115 / 255, 179 / 255, 63 / 255],
+    [52 / 255, 49 / 255, 40 / 255]
+  ];
+  var T = [
+    [250 / 255, 248 / 255, 244 / 255],
+    [255 / 255, 41 / 255, 37 / 255],
+    [251 / 255, 223 / 255, 47 / 255],
+    [253 / 255, 151 / 255, 35 / 255],
+    [31 / 255, 106 / 255, 184 / 255],
+    [159 / 255, 68 / 255, 150 / 255],
+    [80 / 255, 180 / 255, 122 / 255],
+    [36 / 255, 38 / 255, 39 / 255]
+  ];
+  var Y = [
+    [233 / 255, 199 / 255, 173 / 255],
+    [214 / 255, 76 / 255, 127 / 255],
+    [238 / 255, 204 / 255, 124 / 255],
+    [230 / 255, 174 / 255, 115 / 255],
+    [86 / 255, 141 / 255, 146 / 255],
+    [118 / 255, 83 / 255, 97 / 255],
+    [196 / 255, 192 / 255, 118 / 255],
+    [60 / 255, 52 / 255, 40 / 255]
+  ];
+  var E = [
+    [255 / 255, 244 / 255, 216 / 255],
+    [248 / 255, 80 / 255, 46 / 255],
+    [255 / 255, 213 / 255, 44 / 255],
+    [254 / 255, 129 / 255, 5 / 255],
+    [0 / 255, 124 / 255, 197 / 255],
+    [132 / 255, 77 / 255, 139 / 255],
+    [120 / 255, 160 / 255, 66 / 255],
+    [2 / 255, 4 / 255, 6 / 255]
+  ];
+  var A = [
+    [254 / 255, 249 / 255, 246 / 255],
+    [248 / 255, 20 / 255, 35 / 255],
+    [237 / 255, 199 / 255, 8 / 255],
+    [254 / 255, 128 / 255, 11 / 255],
+    [48 / 255, 140 / 255, 206 / 255],
+    [182 / 255, 40 / 255, 94 / 255],
+    [135 / 255, 187 / 255, 26 / 255],
+    [29 / 255, 27 / 255, 28 / 255]
+  ];
+  var M = [
+    [226 / 255, 216 / 255, 205 / 255],
+    [224 / 255, 43 / 255, 39 / 255],
+    [251 / 255, 204 / 255, 38 / 255],
+    [255 / 255, 138 / 255, 4 / 255],
+    [82 / 255, 103 / 255, 202 / 255],
+    [199 / 255, 112 / 255, 253 / 255],
+    [104 / 255, 182 / 255, 90 / 255],
+    [22 / 255, 19 / 255, 11 / 255]
+  ];
+  var H = [
+    [221 / 255, 219 / 255, 211 / 255],
+    [196 / 255, 82 / 255, 69 / 255],
+    [196 / 255, 167 / 255, 80 / 255],
+    [200 / 255, 123 / 255, 70 / 255],
+    [74 / 255, 104 / 255, 167 / 255],
+    [94 / 255, 89 / 255, 161 / 255],
+    [86 / 255, 139 / 255, 70 / 255],
+    [38 / 255, 38 / 255, 38 / 255]
+  ];
+  var d = [
+    [237 / 255, 235 / 255, 236 / 255],
+    [242 / 255, 146 / 255, 109 / 255],
+    [245 / 255, 234 / 255, 143 / 255],
+    [247 / 255, 194 / 255, 115 / 255],
+    [89 / 255, 118 / 255, 212 / 255],
+    [237 / 255, 191 / 255, 243 / 255],
+    [153 / 255, 201 / 255, 113 / 255],
+    [50 / 255, 63 / 255, 66 / 255]
+  ];
+  var S = [
+    [255 / 255, 251 / 255, 230 / 255],
+    [238 / 255, 86 / 255, 46 / 255],
+    [249 / 255, 213 / 255, 50 / 255],
+    [252 / 255, 132 / 255, 4 / 255],
+    [43 / 255, 103 / 255, 175 / 255],
+    [246 / 255, 137 / 255, 163 / 255],
+    [171 / 255, 205 / 255, 94 / 255],
+    [5 / 255, 5 / 255, 5 / 255]
+  ];
+  var N = [
+    [246 / 255, 248 / 255, 244 / 255],
+    [248 / 255, 20 / 255, 40 / 255],
+    [255 / 255, 198 / 255, 8 / 255],
+    [248 / 255, 140 / 255, 18 / 255],
+    [8 / 255, 41 / 255, 148 / 255],
+    [152 / 255, 56 / 255, 142 / 255],
+    [8 / 255, 156 / 255, 49 / 255],
+    [12 / 255, 17 / 255, 15 / 255]
+  ];
+  var e = /* @__PURE__ */ new Map();
+  e.set("itten", {
+    title: "Chromatic Circle",
+    author: "Johannes Itten",
+    year: 1961,
+    reference: "farbkreis_extended.png",
+    cube: r
+  });
+  e.set("itten-normalized", {
+    title: "Chromatic Circle (Paper-white)",
+    author: "Johannes Itten",
+    year: 1961,
+    reference: "Johannes-Itten-The-chromatic-circle-some-exercises-on-the-contrast-of-pure-colors.webp",
+    cube: t
+  });
+  e.set("itten-neutral", {
+    title: "Nathan Gossett & Baoquan Chen",
+    author: "Johannes Itten",
+    year: 1961,
+    reference: "itten-ryb.pdf",
+    cube: o
+  });
+  e.set("bezold", {
+    title: "Farbentafel",
+    author: "Wilhelm von Bezold",
+    year: 1874,
+    reference: "Bezold_Farbentafel_1874.jpg",
+    cube: a
+  });
+  e.set("boutet", {
+    title: "Twelve-color color circles ",
+    author: "Claude Boutet",
+    year: 1708,
+    reference: "Boutet_1708_color_circles.jpg",
+    cube: n
+  });
+  e.set("hett", {
+    title: "RGV Color Wheel",
+    author: "J. A. H. Hett",
+    year: 1908,
+    reference: "RGV_color_wheel_1908",
+    cube: s
+  });
+  e.set("schiffermueller", {
+    title: "Versuch eines Farbensystems",
+    author: "Ignaz Schifferm\xFCller",
+    year: 1772,
+    reference: "020_schiffermueller1.jpg",
+    cube: c
+  });
+  e.set("harris", {
+    title: "The Natural System of Colours",
+    author: "Moses Harris",
+    year: 1766,
+    reference: "Moses_Harris_The_Natural_System_of_Colours.jpg",
+    cube: l
+  });
+  e.set("harrisc82", {
+    title: "The Natural System of Colours",
+    author: "Moses Harris / C82",
+    year: 1766,
+    reference: "harrisc82.png",
+    cube: u
+  });
+  e.set("harrisc82alt", {
+    title: "The Natural System of Colours",
+    author: "Moses Harris / C82",
+    year: 1766,
+    reference: "harrisc82alt.png",
+    cube: i
+  });
+  e.set("goethe", {
+    title: "Farbenkreis",
+    author: "Johann Wolfgang von Goethe",
+    year: 1809,
+    reference: "Goethe_Farbenkreis_zur_Symbolisierung_des_menschlichen_Geistes-_und_Seelenlebens_1809.jpg",
+    cube: h
+  });
+  e.set("munsell", {
+    title: "Munsell Color System",
+    author: "Albert Henry Munsell",
+    year: 1905,
+    reference: "munsell-atlas-11.jpg",
+    cube: _
+  });
+  e.set("munsell-alt", {
+    title: "A Grammar of Color",
+    author: "Cleland, T. M. & Albert Henry Munsell",
+    year: 1921,
+    reference: "munsell-alt.jpg",
+    cube: p
+  });
+  e.set("hayter", {
+    title: "New Practical Treatise on the Three Primitive Colours",
+    author: "Charles Hayter",
+    year: 1826,
+    reference: "Color_diagram_Charles_Hayter.jpg",
+    cube: f
+  });
+  e.set("bormann", {
+    title: "Gouache tint study for Josef Alber's Preliminary Course",
+    author: "Heinrich-Siegfried Bormann",
+    year: 1931,
+    reference: "bormann.png",
+    cube: y
+  });
+  e.set("albers", {
+    title: "Interaction of Color",
+    author: "Josef Albers",
+    year: 1942,
+    reference: "albers-color-harmony.jpg",
+    cube: b
+  });
+  e.set("lohse", {
+    title: "Kunsthalle Bern Poster",
+    author: "Richard Paul Lohse",
+    year: 1970,
+    reference: "lohse.png",
+    cube: R
+  });
+  e.set("chevreul", {
+    title: "Cercle chromatique",
+    author: "Michel Eug\xE8ne Chevreul",
+    year: 1839,
+    reference: "Cercle_chromatique_Chevreul_2.jpg",
+    cube: C
+  });
+  e.set("maycock", {
+    title: "Scale of Normal Colors and their Hues",
+    author: "Mark M. Maycock",
+    year: 1895,
+    reference: "maycock.png",
+    cube: g
+  });
+  e.set("colorprinter", {
+    title: "The Color Printer",
+    author: "John Earhart",
+    year: 1892,
+    reference: "colorprinter.png",
+    cube: T
+  });
+  e.set("japschool", {
+    title: "Japanese Textbook",
+    author: "Japanese School",
+    year: 1930,
+    reference: "japschool.png",
+    cube: m
+  });
+  e.set("kindergarten1890", {
+    title: "Kindergarten Workbook",
+    author: "Milton Bradley",
+    year: 1890,
+    reference: "kindergarten1890.jpg",
+    cube: B
+  });
+  e.set("marvel-news", {
+    title: "64 Color Chart on Newsprint",
+    author: "Marvel Comics",
+    year: 1982,
+    reference: "marvel-news.png",
+    cube: Y
+  });
+  e.set("apple90s", {
+    title: "Macintosh Reference Manual",
+    author: "Apple",
+    year: 1990,
+    reference: "apple90s.png",
+    cube: E
+  });
+  e.set("apple80s", {
+    title: "HyperCard User Manual",
+    author: "Apple",
+    year: 1989,
+    reference: "apple80s.png",
+    cube: A
+  });
+  e.set("clayton", {
+    title: "Intrinsic Value Plate",
+    author: "Greg Clayton",
+    year: 2017,
+    reference: "A260P03_IntrinsicValue1.gif",
+    cube: N
+  });
+  e.set("pixelart", {
+    title: "Pixel Art",
+    author: "Tofu",
+    year: 2024,
+    reference: "pixelart.png",
+    cube: M
+  });
+  e.set("ippsketch", {
+    title: "Imposter Syndrome",
+    author: "Ippsketch",
+    year: 2021,
+    reference: "ippsketch.png",
+    cube: H
+  });
+  e.set("ryan", {
+    title: "Compositions Palette",
+    author: "Ryan",
+    year: 2024,
+    reference: "ryan.png",
+    cube: d
+  });
+  e.set("ten", {
+    title: "Ten",
+    author: "Roni Kaufman",
+    year: 2022,
+    reference: "ten.png",
+    cube: S
+  });
+  e.set("rgb", {
+    title: "Inverted RGB",
+    author: "James Clerk Maxwell",
+    year: 1860,
+    reference: "rgb-cube.png",
+    cube: [
+      [1, 1, 1],
+      [1, 0, 0],
+      [0, 1, 0],
+      [1, 1, 0],
+      [0, 0, 1],
+      [1, 0, 1],
+      [0, 1, 1],
+      [0, 0, 0]
+    ]
+  });
+
+  // node_modules/rybitten/dist/rybitten.mjs
+  var g2 = (t2) => t2 * t2 * (3 - 2 * t2);
+  var l2 = (t2, n2, s2) => t2 + s2 * (n2 - t2);
+  var m2 = (t2, n2, s2, e2, r2, o2) => l2(l2(t2, n2, r2), l2(s2, e2, r2), o2);
+  var p2 = (t2, n2, s2, e2, r2, o2, c2, u2, b2, a2, i2) => l2(
+    m2(t2, n2, s2, e2, b2, a2),
+    m2(r2, o2, c2, u2, b2, a2),
+    i2
+  );
+  function k(t2, { cube: n2 = r, easingFn: s2 = g2 } = {}) {
+    const e2 = s2(t2[0]), r2 = s2(t2[1]), o2 = s2(t2[2]), c2 = n2.map((a2) => a2[0]), u2 = n2.map((a2) => a2[1]), b2 = n2.map((a2) => a2[2]);
+    return [
+      p2(...c2, e2, r2, o2),
+      p2(...u2, e2, r2, o2),
+      p2(...b2, e2, r2, o2)
+    ];
+  }
+
+  // ui.ts
+  window.rybittenConvert = {
+    ryb2rgb: (coords, gamutName) => {
+      const cubeData = e.get(gamutName);
+      const cube = cubeData ? cubeData.cube : void 0;
+      return k(coords, { cube });
+    },
+    // Also expose the available gamuts
+    getAvailableGamuts: () => {
+      const gamutList = {};
+      e.forEach((value, key) => {
+        gamutList[key] = \`\${value.title} by \${value.author} (\${value.year})\`;
+      });
+      return gamutList;
+    }
+  };
+})();
+
+</script>
+</body>
+</html>`;
+
 "use strict";
 
 // node_modules/rybitten/dist/cubes.mjs
@@ -921,7 +2766,7 @@ figma.ui.onmessage = async (msg) => {
       console.log("[Plugin] Generated colors:", colors);
       const frame = figma.createFrame();
       console.log("[Plugin] Created frame");
-      let configArray = [
+      const configArray = [
         msg.config.total,
         msg.config.hStart,
         msg.config.hCycles,
@@ -983,7 +2828,7 @@ figma.ui.onmessage = async (msg) => {
       console.log("[Plugin] Success message sent back to UI");
     } catch (error) {
       console.error("[Plugin] Error generating palette:", error);
-      figma.ui.postMessage({ type: "error", message: error.toString() });
+      figma.ui.postMessage({ type: "error", message: error instanceof Error ? error.message : String(error) });
     }
   }
   if (msg.type === "cancel") {
