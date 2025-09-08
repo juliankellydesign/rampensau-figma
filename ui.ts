@@ -22,6 +22,7 @@ declare global {
   }
 }
 
+// @ts-expect-error window is available in the UI context
 window.rybittenConvert = {
   ryb2rgb: (coords: [number, number, number], gamutName: string) => {
     const cubeData = cubes.get(gamutName);
@@ -46,6 +47,7 @@ window.rybittenConvert = {
 };
 
 // Expose rampensau utils
+// @ts-expect-error window is available in the UI context
 window.rampensauUtils = {
   harveyHue: colorUtils.harveyHue
 };
