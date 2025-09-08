@@ -112,9 +112,25 @@
     
     .content-wrapper {
       flex: 1;
-      overflow-y: auto;
+      display: flex;
+      gap: 16px;
       padding: 16px;
       padding-bottom: 100px; /* Space for fixed preview */
+      overflow: hidden;
+    }
+    
+    .left-column {
+      flex: 1;
+      min-width: 350px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+    
+    .right-column {
+      width: 380px;
+      overflow-y: auto;
+      padding-left: 8px;
+      border-left: 1px solid #eee;
     }
     
     .preview-container {
@@ -155,6 +171,19 @@
       display: block;
     }
     
+    /* Color Cube Visualization Styles */
+    .cube-visualization {
+      position: sticky;
+      top: 0;
+    }
+    
+    .cube-visualization h3 {
+      font-size: 13px;
+      font-weight: 600;
+      margin: 0 0 12px 0;
+      color: #333;
+    }
+    
     /* Custom Cube Editor Styles */
     .custom-cube-container {
       display: flex;
@@ -168,7 +197,11 @@
     .cube-diagram {
       display: flex;
       justify-content: center;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
+      padding: 16px;
+      background: white;
+      border-radius: 4px;
+      border: 1px solid #ddd;
     }
     
     .cube-colors {
@@ -197,11 +230,21 @@
     }
     
     .color-input-group input[type="color"] {
-      width: 40px;
-      height: 40px;
-      border: 1px solid #ddd;
+      width: 50px;
+      height: 50px;
+      border: 2px solid #ddd;
       border-radius: 4px;
       cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    
+    .color-input-group input[type="color"]:hover:not(:disabled) {
+      border-color: #18a0fb;
+    }
+    
+    .color-input-group input[type="color"]:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
     }
     
     .cube-preview {
@@ -211,24 +254,35 @@
     .preview-grid {
       display: grid;
       grid-template-columns: repeat(8, 1fr);
-      grid-template-rows: repeat(4, 20px);
-      gap: 2px;
+      grid-template-rows: repeat(8, 30px);
+      gap: 3px;
       margin-top: 8px;
-      padding: 8px;
+      padding: 12px;
       background: white;
       border-radius: 4px;
       border: 1px solid #ddd;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
     .preview-cell {
-      border-radius: 2px;
+      border-radius: 3px;
+      transition: transform 0.2s;
+      cursor: pointer;
+    }
+    
+    .preview-cell:hover {
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      z-index: 10;
+      position: relative;
     }
   </style>
 </head>
 <body>
   <div class="content-wrapper">
-    <div class="control-group">
-    <label>Total Colors</label>
+    <div class="left-column">
+      <div class="control-group">
+        <label>Total Colors</label>
     <div class="range-container">
       <input type="range" id="total" min="2" max="20" value="7">
       <input type="number" class="range-value" id="totalValue" value="7" min="2" max="20">
@@ -480,9 +534,17 @@
         <option value="custom">Custom</option>
       </select>
     </div>
-    
-    <div class="control-group" id="customCubeEditor" style="display: none;">
-      <label>Custom Color Cube</label>
+  </div>
+  
+  <div class="button-group">
+    <button id="generate">Generate Palette</button>
+    <button id="cancel">Cancel</button>
+  </div>
+  </div>
+  
+  <div class="right-column">
+    <div class="cube-visualization">
+      <h3>Color Cube Visualization</h3>
       <div class="custom-cube-container">
         <div class="cube-diagram">
           <svg width="120" height="100" viewBox="0 0 120 100">
@@ -555,11 +617,6 @@
       </div>
     </div>
   </div>
-  
-    <div class="button-group">
-      <button id="generate">Generate Palette</button>
-      <button id="cancel">Cancel</button>
-    </div>
   </div>
   
   <div class="preview-container">
@@ -613,53 +670,54 @@
     // Handle color mode change to show/hide RYBitten gamut
     document.getElementById('colorMode').addEventListener('change', (e) => {
       const rybGamutGroup = document.getElementById('rybGamutGroup');
-      const customCubeEditor = document.getElementById('customCubeEditor');
+      const cubeVisualization = document.querySelector('.cube-visualization');
       if (e.target.value === 'rybitten') {
         rybGamutGroup.style.display = 'block';
-        // Check if custom gamut is selected
-        if (document.getElementById('rybGamut').value === 'custom') {
-          customCubeEditor.style.display = 'block';
-        }
+        cubeVisualization.style.display = 'block';
+        // Update cube preview for current gamut
+        updateCubeForGamut(document.getElementById('rybGamut').value);
       } else {
         rybGamutGroup.style.display = 'none';
-        customCubeEditor.style.display = 'none';
+        cubeVisualization.style.display = 'none';
       }
     });
     
-    // Handle RYBitten gamut change to show/hide custom cube editor
-    let previousGamut = document.getElementById('rybGamut').value;
-    document.getElementById('rybGamut').addEventListener('change', (e) => {
-      const customCubeEditor = document.getElementById('customCubeEditor');
-      if (e.target.value === 'custom') {
-        customCubeEditor.style.display = 'block';
-        
-        // Copy colors from the previous gamut if it wasn't custom
-        if (previousGamut !== 'custom' && window.rybittenConvert) {
-          const gamutCube = window.rybittenConvert.getGamutCube(previousGamut);
-          if (gamutCube) {
-            const rgbToHex = (rgb) => {
-              const r = Math.round(rgb[0] * 255).toString(16).padStart(2, '0');
-              const g = Math.round(rgb[1] * 255).toString(16).padStart(2, '0');
-              const b = Math.round(rgb[2] * 255).toString(16).padStart(2, '0');
-              return `#${r}${g}${b}`;
-            };
-            
-            document.getElementById('cubeWhite').value = rgbToHex(gamutCube[0]);
-            document.getElementById('cubeRed').value = rgbToHex(gamutCube[1]);
-            document.getElementById('cubeYellow').value = rgbToHex(gamutCube[2]);
-            document.getElementById('cubeOrange').value = rgbToHex(gamutCube[3]);
-            document.getElementById('cubeBlue').value = rgbToHex(gamutCube[4]);
-            document.getElementById('cubeViolet').value = rgbToHex(gamutCube[5]);
-            document.getElementById('cubeGreen').value = rgbToHex(gamutCube[6]);
-            document.getElementById('cubeBlack').value = rgbToHex(gamutCube[7]);
-          }
+    // Function to update cube colors based on gamut
+    function updateCubeForGamut(gamutName) {
+      if (window.rybittenConvert) {
+        const gamutCube = gamutName === 'custom' ? getCustomCube() : window.rybittenConvert.getGamutCube(gamutName);
+        if (gamutCube) {
+          const rgbToHex = (rgb) => {
+            const r = Math.round(rgb[0] * 255).toString(16).padStart(2, '0');
+            const g = Math.round(rgb[1] * 255).toString(16).padStart(2, '0');
+            const b = Math.round(rgb[2] * 255).toString(16).padStart(2, '0');
+            return `#${r}${g}${b}`;
+          };
+          
+          document.getElementById('cubeWhite').value = rgbToHex(gamutCube[0]);
+          document.getElementById('cubeRed').value = rgbToHex(gamutCube[1]);
+          document.getElementById('cubeYellow').value = rgbToHex(gamutCube[2]);
+          document.getElementById('cubeOrange').value = rgbToHex(gamutCube[3]);
+          document.getElementById('cubeBlue').value = rgbToHex(gamutCube[4]);
+          document.getElementById('cubeViolet').value = rgbToHex(gamutCube[5]);
+          document.getElementById('cubeGreen').value = rgbToHex(gamutCube[6]);
+          document.getElementById('cubeBlack').value = rgbToHex(gamutCube[7]);
         }
-        
-        updateCubePreview();
-      } else {
-        customCubeEditor.style.display = 'none';
       }
-      previousGamut = e.target.value;
+      updateCubePreview();
+    }
+    
+    // Handle RYBitten gamut change
+    document.getElementById('rybGamut').addEventListener('change', (e) => {
+      const cubeInputs = document.querySelectorAll('.color-input-group input[type="color"]');
+      if (e.target.value === 'custom') {
+        // Enable editing for custom
+        cubeInputs.forEach(input => input.disabled = false);
+      } else {
+        // Disable editing for presets
+        cubeInputs.forEach(input => input.disabled = true);
+        updateCubeForGamut(e.target.value);
+      }
       updatePreview();
     });
     
@@ -1132,11 +1190,11 @@
     setTimeout(() => {
       console.log('[UI] Delayed check - window.rybittenConvert available:', !!window.rybittenConvert);
       try {
-        // Check if custom gamut is selected on load
-        if (document.getElementById('colorMode').value === 'rybitten' && 
-            document.getElementById('rybGamut').value === 'custom') {
-          document.getElementById('customCubeEditor').style.display = 'block';
-          updateCubePreview();
+        // Initialize cube visualization
+        if (document.getElementById('colorMode').value === 'rybitten') {
+          updateCubeForGamut(document.getElementById('rybGamut').value);
+        } else {
+          document.querySelector('.cube-visualization').style.display = 'none';
         }
         updatePreview();
       } catch (error) {

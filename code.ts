@@ -3,7 +3,7 @@ import { cubes } from 'rybitten/cubes';
 import { colorUtils } from 'rampensau';
 
 // @ts-expect-error __html__ is injected by the build process
-figma.showUI(__html__, { width: 400, height: 600 });
+figma.showUI(__html__, { width: 800, height: 650 });
 
 // Listen for selection changes
 figma.on('selectionchange', () => {
